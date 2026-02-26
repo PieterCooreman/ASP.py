@@ -58,6 +58,66 @@ class NameValueCollection:
     def __iter__(self):
         # For Each over collection yields keys
         return iter(self._m.keys())
+        
+        
+
+class ServerVariablesCollection(NameValueCollection):
+    """Like NameValueCollection but Item() returns IStringList objects,
+    matching IIS Classic ASP behaviour where TypeName() returns 'IStringList'."""
+
+    def Item(self, key):
+        k = str(key)
+        lk = k.lower()
+        if lk in self._kmap:
+            k = self._kmap[lk]
+        vals = self._m.get(k)
+        if not vals:
+            return IStringList([""])
+        return IStringList(vals)
+
+    def __vbs_index_get__(self, key):
+        return self.Item(key)
+
+class IStringList:
+    """Emulates the Classic ASP IStringList returned by Request.ServerVariables.
+    
+    TypeName() returns "IStringList". It behaves as a string (str() returns the
+    first/joined value) but also exposes Count and iteration over the values.
+    """
+
+    def __init__(self, values: list):
+        self._values = [str(v) for v in values] if values else [""]
+
+    @property
+    def Count(self):
+        return len(self._values)
+
+    def Item(self, index=1):
+        i = int(index)
+        if i < 1 or i > len(self._values):
+            raise IndexError("Index out of range")
+        return self._values[i - 1]
+
+    def __iter__(self):
+        return iter(self._values)
+
+    def __str__(self):
+        # IIS joins multiple values with ", " just like NameValueCollection does
+        return ", ".join(self._values)
+
+    def __repr__(self):
+        return f"IStringList({self._values!r})"
+
+    # Allow direct string comparisons like If Request.ServerVariables("HTTPS") = "on"
+    def __eq__(self, other):
+        return str(self) == str(other)
+
+    def __ne__(self, other):
+        return str(self) != str(other)
+
+    def __vbs_typename__(self):
+        return "IStringList"
+
 
 class UploadedFile:
     def __init__(self, name: str, filename: str, content_type: str, data: bytes):
@@ -125,8 +185,9 @@ class Request:
 
         self._query = NameValueCollection(_parse_qs(self._query_string))
         self._form = NameValueCollection({})
-        self._cookies = CookiesCollection(_parse_cookie_header(self._headers.get('cookie', '')))
-        self._server_vars = NameValueCollection(_build_server_vars(self))
+        self._cookies = CookiesCollection(_parse_cookie_header(self._headers.get('cookie', '')))        
+        self._server_vars = ServerVariablesCollection(_build_server_vars(self))
+
 
         self._parse_form_if_needed()
 

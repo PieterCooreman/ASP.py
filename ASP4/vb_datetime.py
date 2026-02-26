@@ -103,25 +103,26 @@ def DateAdd(interval, number, date):
     itv = str(interval).lower()
     n = float(number)
     dt = _to_datetime(date)
-
     if itv in ("yyyy", "y"):
-        return _add_years(dt, int(n))
-    if itv in ("q",):
-        return _add_months(dt, int(n) * 3)
-    if itv in ("m",):
-        return _add_months(dt, int(n))
-    if itv in ("d", "w"):
-        return dt + _dt.timedelta(days=n)
-    if itv in ("ww",):
-        return dt + _dt.timedelta(weeks=n)
-    if itv in ("h",):
+        result = _add_years(dt, int(n))
+    elif itv in ("q",):
+        result = _add_months(dt, int(n) * 3)
+    elif itv in ("m",):
+        result = _add_months(dt, int(n))
+    elif itv in ("d", "w"):
+        result = dt + _dt.timedelta(days=n)
+    elif itv in ("ww",):
+        result = dt + _dt.timedelta(weeks=n)
+    elif itv in ("h",):
         return dt + _dt.timedelta(hours=n)
-    if itv in ("n",):
+    elif itv in ("n",):
         return dt + _dt.timedelta(minutes=n)
-    if itv in ("s",):
+    elif itv in ("s",):
         return dt + _dt.timedelta(seconds=n)
-
-    raise VBScriptRuntimeError(f"DateAdd: unsupported interval {interval!r}")
+    else:
+        raise VBScriptRuntimeError(f"DateAdd: unsupported interval {interval!r}")
+    
+    return result.date()  # strip time for date-based intervals
 
 
 def DateDiff(interval, date1, date2, firstdayofweek=vbSunday, firstweekofyear=vbFirstJan1):
@@ -229,9 +230,9 @@ def TimeValue(s):
 
 def CDate(s):
     try:
-        return _parse_iso_datetime(str(s))
+        result = _parse_iso_datetime(str(s))
+        return result.date()  # returns date only (year/month/day)
     except VBScriptRuntimeError:
-        # Re-raise as Type mismatch (13) for VBScript compatibility
         from .vb_runtime import VBScriptCOMError
         raise VBScriptCOMError(13, "Type mismatch")
 

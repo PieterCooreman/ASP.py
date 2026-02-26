@@ -27,7 +27,7 @@ def _require_bcrypt():
 
 
 class CryptoShim:
-    def Hash(self, password, rounds=12):
+    def Hash(self, password, rounds=10):
         _require_bcrypt()
         if password is VBEmpty or password is VBNull or password is VBNothing or password is None:
             raise VBScriptRuntimeError("Crypto.Hash: password is required")

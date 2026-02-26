@@ -24,7 +24,8 @@ class RenderResult:
         self.headers = []  # list[(name, value)]
         self.body = b""
         self.charset = "utf-8"
-        self.log_tail = []
+        self.log_tail = []        
+
 
 
 class Response:
@@ -37,6 +38,7 @@ class Response:
         self._buf_str_parts: list[str] = []
         self._buf_str_count = 0          # track count to avoid len() on every Write
         self._buf_str_limit = 8192
+        self._sent_first_output = False
 
         self._content_type = "text/html"
         self._charset = "utf-8"
@@ -76,19 +78,18 @@ class Response:
 
     def Write(self, s):
         txt = vbs_cstr(s)
-        if not getattr(self, '_sent_first_output', False):
+        if not self._sent_first_output:
             txt = txt.lstrip("\r\n")
-            if txt == "":
+            if not txt:
                 return
             self._sent_first_output = True
         if self._buffer_enabled:
-            self._buf_str_parts.append(txt)
-            self._buf_str_count += 1
-            if self._buf_str_count >= self._buf_str_limit:
-                joined = "".join(self._buf_str_parts)
-                self._buf_chunks.append(joined.encode(self._charset or "utf-8", errors="replace"))
-                self._buf_str_parts.clear()
-                self._buf_str_count = 0
+            parts = self._buf_str_parts
+            parts.append(txt)
+            count = len(parts)
+            if count >= self._buf_str_limit:
+                self._buf_chunks.append("".join(parts).encode(self._charset or "utf-8", errors="replace"))
+                parts.clear()
         else:
             self._write_raw_bytes(txt.encode(self._charset or "utf-8", errors="replace"))
 
@@ -176,24 +177,22 @@ class Response:
 
     def Redirect(self, url):
         u = vbs_cstr(url)
+        #print(f"[Redirect] raw url={u!r} current_path={getattr(self, '_current_path', 'NOT SET')!r}", flush=True)
         try:
-            # Resolve relative redirects against current request path when available.
             if not (u.startswith('/') or urllib.parse.urlsplit(u).scheme):
                 base = getattr(self, '_current_path', '') or ''
                 base = base.split('?', 1)[0]
+                #print(f"[Redirect] base={base!r}", flush=True)
                 if base:
                     if u.startswith('?') or u.startswith('#'):
                         u = base + u
                     else:
                         if not base.endswith('/'):
                             base = base.rsplit('/', 1)[0] + '/'
-                        # Classic ASP Redirect behavior: relative URLs are relative to
-                        # the current executing file's folder.
-                        # urllib.parse.urljoin handles "./", "../", and file names correctly.
                         u = urllib.parse.urljoin(base, u)
-        except Exception:
-            pass
-
+        except Exception as e:
+            print(f"[Redirect] exception: {e!r}", flush=True)
+        #print(f"[Redirect] final url={u!r} status={self.Status!r}", flush=True)
         self.Status = "302 Found"
         self.AddHeader("Location", u)
         self.End()

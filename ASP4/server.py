@@ -333,6 +333,25 @@ class ASPRequestHandler(BaseHTTPRequestHandler):
         request_path = path
         request_query = parsed.query or ""
         docroot = cast(ASPHTTPServer, self.server).docroot
+        
+        # ↓ ADD THIS BLOCK ↓
+        # Redirect /foo to /foo/ if it maps to a directory (mirrors IIS behaviour)
+        if not path.endswith('/'):
+            try:
+                phys = _safe_join(docroot, path)
+            except PermissionError:
+                phys = None
+            if phys and os.path.isdir(phys):
+                location = path + '/'
+                if request_query:
+                    location += '?' + request_query
+                self.send_response(301)
+                self.send_header('Location', location)
+                self.send_header('Content-Length', '0')
+                self.send_header('Connection', 'keep-alive')
+                self.end_headers()
+                return
+        # ↑ END BLOCK ↑
 
         # Default documents (/, /dir/, /dir)
         dd = _try_default_document(docroot, path)
@@ -555,15 +574,18 @@ class ASPRequestHandler(BaseHTTPRequestHandler):
             ctx_getter=lambda: ctx_box['ctx'],
         )
 
-        res = render_asp_vm(
-            "",
-            request=req,
-            session=sess,
-            application=app_store.app,
-            server=srv,
-            session_is_new=is_new,
-            on_context_created=lambda ctx: ctx_box.update({'ctx': ctx})
-        )
+        try:
+            res = render_asp_vm(
+                "",
+                request=req,
+                session=sess,
+                application=app_store.app,
+                server=srv,
+                session_is_new=is_new,
+                on_context_created=lambda ctx: ctx_box.update({'ctx': ctx})
+            )
+        except ResponseEndException as e:
+            res = e.result  # ← partial response built up to the point of End()
 
         if not any(h[0].lower() == 'content-length' for h in res.headers):
             res.headers.append(("Content-Length", str(len(res.body))))
