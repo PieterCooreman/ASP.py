@@ -562,7 +562,7 @@ def _build_server_vars(req: Request) -> dict:
         'HTTPS': [https_val],
         'SERVER_PORT_SECURE': ['1' if is_https else '0'],
         'GATEWAY_INTERFACE': ['CGI/1.1'],
-        'SERVER_SOFTWARE': ['asp.py'],
+        'SERVER_SOFTWARE': ['ASP4'],
         'INSTANCE_ID': ['1'],
         'INSTANCE_META_PATH': ['/LM/W3SVC/1/ROOT'],
         'LOCAL_ADDR': [server_name],

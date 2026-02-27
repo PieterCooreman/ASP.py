@@ -1,4 +1,4 @@
-"""HTTP response building for ASP.py.
+"""HTTP response building for ASP4
 
 This module holds the Response implementation that ASP/VBScript interacts with.
 It is shared between different execution engines (exec-based and VM-based).

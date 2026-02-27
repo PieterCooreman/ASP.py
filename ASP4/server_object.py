@@ -57,8 +57,7 @@ def make_asp_error(request_path: str, exc: Exception) -> ASPError:
         # runtime error if it looks like one or just wrap it.
         # But the user asked to ALWAYS use Microsoft VBScript for consistency.
         # If it's a generic python error, we might label it "Microsoft VBScript runtime error"
-        # and use a generic error code if we don't have one, or just keep asp.py
-        # BUT the user specifically complained about "asp.py".
+        # and use a generic error code if we don't have one, or just keep ASP4        
         # So let's force the category for standard exceptions too.
         category = "ASP4 runtime error"
         # 80004005 is "Unspecified error", which is standard for unmapped errors.
@@ -107,7 +106,7 @@ class ASPError:
         *,
         number: int = 0x80004005,
         description: str = "",
-        category: str = "asp.py",
+        category: str = "asp4",
         asp_code: str = "",
         asp_description: str = "",
         file: str = "",
@@ -360,7 +359,7 @@ class Server:
         return ASPError(description=str(e))
 
     def ASP4ListAspPages(self):
-        """asp.py extension: list .asp pages under docroot.
+        """ASP4 extension: list .asp pages under docroot.
 
         Returns a VBArray of virtual paths like "/hello.asp".
         """
@@ -387,7 +386,7 @@ class Server:
         return a
 
     def ASP4Run(self, virtual_path: str):
-        """asp.py extension: render another ASP page and capture status.
+        """ASP4 extension: render another ASP page and capture status.
 
         Runs in an isolated view of the current Session/Application (state is restored).
         """

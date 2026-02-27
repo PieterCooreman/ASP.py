@@ -1,4 +1,4 @@
-"""ADODB shim for asp.py – SQLite backend.
+"""ADODB shim for ASP4 – SQLite backend.
 
 Implements enough of the ADO object model to run Classic ASP / aspLite apps
 against SQLite.

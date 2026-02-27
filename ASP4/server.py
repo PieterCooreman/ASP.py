@@ -550,18 +550,18 @@ class ASPRequestHandler(BaseHTTPRequestHandler):
                 except Exception:
                     body_preview_txt = repr(body_preview)
                 print(
-                    f"[asp.py trace] {self.command} {path} ctype={ctype!r} content_length={headers.get('Content-Length') or headers.get('content-length')!r} body_len={len(body)} form_keys={list(form_map.keys())}",
+                    f"[asp4 trace] {self.command} {path} ctype={ctype!r} content_length={headers.get('Content-Length') or headers.get('content-length')!r} body_len={len(body)} form_keys={list(form_map.keys())}",
                     file=sys.stderr,
                 )
                 if self.command.upper() in ("POST", "PUT"):
-                    print(f"[asp.py trace] body_preview={body_preview_txt!r}", file=sys.stderr)
+                    print(f"[asp4 trace] body_preview={body_preview_txt!r}", file=sys.stderr)
                     # Common aspLite fields
                     for k in ("aspFormAction", "yesno", "checkbox", "radio"):
                         try:
                             v = req.Form.Item(k)
                         except Exception as e:
                             v = f"<error {e}>"
-                        print(f"[asp.py trace] form[{k}]={v!r}", file=sys.stderr)
+                        print(f"[asp4 trace] form[{k}]={v!r}", file=sys.stderr)
             except Exception:
                 pass
 
@@ -656,7 +656,7 @@ def run(host="0.0.0.0", port=8080, docroot="web"):
         httpd = ASPHTTPServerV6((host_s, port_i), ASPRequestHandler, docroot)
     else:
         httpd = ASPHTTPServer((host_s, port_i), ASPRequestHandler, docroot)
-    print(f"ASP.py-like server running at http://{host}:{port}/ (docroot={docroot})")
+    print(f"ASP4 server running at http://{host}:{port}/ (docroot={docroot})")
     try:
         httpd.serve_forever(poll_interval=0.25)
     except KeyboardInterrupt:

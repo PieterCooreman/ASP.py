@@ -231,7 +231,7 @@ def _http_request(
         if not any(k.lower() == "accept-encoding" for k in req_headers.keys()):
             req_headers["Accept-Encoding"] = "gzip, deflate"
         if not any(k.lower() == "user-agent" for k in req_headers.keys()):
-            req_headers["User-Agent"] = "asp.py-msxml/0"
+            req_headers["User-Agent"] = "asp4-msxml/0"
 
         if scheme == "https":
             ctx = ssl.create_default_context()

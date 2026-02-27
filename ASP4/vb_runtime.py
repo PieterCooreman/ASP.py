@@ -147,7 +147,7 @@ def vbs_cstr(value) -> str:
                         except Exception:
                             pass
                     proc_name = getattr(value, 'name', 'UnknownProc')
-                    msg = f"[asp.py] _UserProc rendered to string: {proc_name}"
+                    msg = f"[asp4] _UserProc rendered to string: {proc_name}"
                     try:
                         pos = getattr(interp, '_last_stmt_pos', None) if interp is not None else None
                         src = getattr(interp, '_current_vbs_src', '') if interp is not None else ''
