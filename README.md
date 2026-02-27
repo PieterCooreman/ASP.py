@@ -773,4 +773,9 @@ Example:
 python ASP4/server.py 0.0.0.0 8080 www
 ```
 
+Browse to:
+```bash
+http://localhost:8080/
+```
+
 The server will serve both static files and .asp pages from the specified document root.
