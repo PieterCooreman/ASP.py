@@ -7,6 +7,17 @@ _cache_lock = threading.RLock()
 _cache = {}            # path -> (mtime_ns, nodes)
 _monolithic_cache = {} # path -> (deps_map: dict[path, mtime_ns], nodes)
 
+_MAX_CACHE_SIZE = 200  # Max entries per cache
+
+
+def _evict_if_needed(cache_dict):
+    """Remove oldest entries if cache exceeds limit."""
+    if len(cache_dict) > _MAX_CACHE_SIZE:
+        # Remove first 20% of entries (simple eviction)
+        keys_to_remove = list(cache_dict.keys())[:_MAX_CACHE_SIZE // 5]
+        for k in keys_to_remove:
+            cache_dict.pop(k, None)
+
 
 def get_cached_asp_nodes(path, parse_fn):
     """Get parsed nodes for an ASP file, using cache if available.
@@ -33,6 +44,7 @@ def get_cached_asp_nodes(path, parse_fn):
     nodes = parse_fn(path)
 
     with _cache_lock:
+        _evict_if_needed(_cache)
         _cache[path] = (mtime_ns, nodes)
 
     return nodes
@@ -76,6 +88,7 @@ def get_cached_monolithic_nodes(path, parse_fn):
             pass  # Should not happen if parsing succeeded
 
     with _cache_lock:
+        _evict_if_needed(_monolithic_cache)
         _monolithic_cache[path] = (new_deps_map, nodes)
 
     return nodes

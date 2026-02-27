@@ -23,6 +23,12 @@ from typing import Any, cast
 from urllib.parse import urljoin, urlparse
 
 import http.client
+
+try:
+    import certifi
+    _HAS_CERTIFI = True
+except ImportError:
+    _HAS_CERTIFI = False
 import ipaddress
 import xml.etree.ElementTree as ET
 
@@ -234,7 +240,10 @@ def _http_request(
             req_headers["User-Agent"] = "asp4-msxml/0"
 
         if scheme == "https":
-            ctx = ssl.create_default_context()
+            if _HAS_CERTIFI:
+                ctx = ssl.create_default_context(cafile=certifi.where())
+            else:
+                ctx = ssl.create_default_context()
             conn: http.client.HTTPConnection = http.client.HTTPSConnection(host, port, timeout=timeout_s, context=ctx)
         else:
             conn = http.client.HTTPConnection(host, port, timeout=timeout_s)

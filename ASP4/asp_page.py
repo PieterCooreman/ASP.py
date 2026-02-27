@@ -51,6 +51,7 @@ class IncludeNode:
 # ---------------------------------------------------------------------------
 
 _granular_ast_cache: dict[str, tuple[list, str]] = {}
+_GRANULAR_CACHE_MAX = 200
 
 
 def _hash_nodes(nodes) -> str:
@@ -81,6 +82,11 @@ def compile_asp_nodes_cached(nodes) -> tuple[list, str]:
     if cached is not None:
         return cached
     result = compile_asp_nodes(nodes)
+    if len(_granular_ast_cache) > _GRANULAR_CACHE_MAX:
+        # Evict oldest entries
+        keys = list(_granular_ast_cache.keys())
+        for k in keys[:_GRANULAR_CACHE_MAX // 5]:
+            _granular_ast_cache.pop(k, None)
     _granular_ast_cache[key] = result
     return result
 

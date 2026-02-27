@@ -1697,7 +1697,7 @@ class FoldersCollection:
 
     def __iter__(self):
         try:
-            names = os.listdir(self._path)
+            names = sorted(os.listdir(self._path), key=str.lower)
         except Exception:
             names = []
         for n in names:
@@ -1719,7 +1719,7 @@ class FilesCollection:
 
     def __iter__(self):
         try:
-            names = os.listdir(self._path)
+            names = sorted(os.listdir(self._path), key=str.lower)
         except Exception:
             names = []
         for n in names:
