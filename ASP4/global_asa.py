@@ -34,20 +34,33 @@ class GlobalAsaCompiled:
     typelibs: List[str] = field(default_factory=list)
 
 
-def load_global_asa(docroot: str) -> str:
-    path = os.path.join(docroot, 'global.asa')
-    if not os.path.isfile(path):
-        return ""
-    with open(path, 'r', encoding='utf-8') as f:
-        return f.read()
+def load_global_asa(docroot: str) -> tuple[str, str]:
+    """Returns (content, path). If not found, returns ('', '')."""
+    # Check for global.asa case-insensitively on Linux
+    if os.name == "nt":
+        path = os.path.join(docroot, 'global.asa')
+        if os.path.isfile(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                return f.read(), path
+    else:
+        try:
+            for name in os.listdir(docroot):
+                if name.lower() == 'global.asa':
+                    path = os.path.join(docroot, name)
+                    if os.path.isfile(path):
+                        with open(path, 'r', encoding='utf-8') as f:
+                            return f.read(), path
+        except Exception:
+            pass
+    return "", ""
 
 
 def compile_global_asa(docroot: str) -> GlobalAsaCompiled:
-    txt = load_global_asa(docroot)
+    txt, asa_path = load_global_asa(docroot)
     if not txt:
         return GlobalAsaCompiled()
 
-    expanded = _expand_includes(txt, os.path.join(docroot, 'global.asa'), docroot)
+    expanded = _expand_includes(txt, asa_path or os.path.join(docroot, 'global.asa'), docroot)
     comp = GlobalAsaCompiled()
 
     # Object declarations outside <script>

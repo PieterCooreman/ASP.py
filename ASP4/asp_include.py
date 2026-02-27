@@ -23,6 +23,21 @@ def _read_text_best_effort(path: str) -> str:
         return data.decode('cp1252', errors='replace')
 
 
+def _resolve_case_insensitive(dir_path: str, filename: str) -> str | None:
+    """Resolve a path case-insensitively. Returns None on Windows (not needed) or if not found."""
+    if os.name == "nt":
+        return None
+    try:
+        entries = os.listdir(dir_path)
+    except Exception:
+        return None
+    filename_lower = filename.lower()
+    for name in entries:
+        if name.lower() == filename_lower:
+            return os.path.join(dir_path, name)
+    return None
+
+
 class IncludeError(Exception):
     pass
 
@@ -50,6 +65,13 @@ def resolve_include_path(kind: str, val: str, current_phys: str, docroot: str, c
     # Prevent traversal outside docroot
     if os.path.commonpath([docroot_abs, phys]) != docroot_abs:
         raise IncludeError('Include path outside application')
+    # Case-insensitive fallback for Linux (not needed on Windows)
+    if not os.path.isfile(phys):
+        dir_path = os.path.dirname(phys)
+        filename = os.path.basename(phys)
+        alt = _resolve_case_insensitive(dir_path, filename)
+        if alt:
+            phys = alt
     return phys, virt
 
 

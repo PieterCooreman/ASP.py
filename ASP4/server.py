@@ -174,6 +174,19 @@ def _try_default_document(docroot: str, url_path: str):
         if os.path.isfile(cand_phys):
             cand_url = dir_url + fn
             return cand_url, cand_phys
+        # Case-insensitive fallback for Linux
+        if os.name != "nt":
+            try:
+                entries = os.listdir(dir_phys)
+            except Exception:
+                continue
+            fn_lower = fn.lower()
+            for name in entries:
+                if name.lower() == fn_lower:
+                    cand_phys = os.path.join(dir_phys, name)
+                    if os.path.isfile(cand_phys):
+                        cand_url = dir_url + name
+                        return cand_url, cand_phys
     return None
 
 
@@ -185,7 +198,21 @@ def _find_app_root(docroot: str, phys_path: str) -> str:
     docroot_abs = os.path.abspath(docroot)
     cur = os.path.abspath(os.path.dirname(phys_path))
     while True:
-        if os.path.isfile(os.path.join(cur, 'global.asa')):
+        # Check for global.asa case-insensitively on Linux
+        found_asa = False
+        if os.name == "nt":
+            if os.path.isfile(os.path.join(cur, 'global.asa')):
+                found_asa = True
+        else:
+            try:
+                for name in os.listdir(cur):
+                    if name.lower() == 'global.asa':
+                        if os.path.isfile(os.path.join(cur, name)):
+                            found_asa = True
+                            break
+            except Exception:
+                pass
+        if found_asa:
             return cur
         if cur == docroot_abs:
             break

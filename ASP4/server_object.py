@@ -326,6 +326,23 @@ class Server:
         # Prevent path traversal outside docroot
         if os.path.commonpath([self._docroot, target]) != self._docroot:
             raise Exception("Server.MapPath: path outside application")
+
+        # Case-insensitive fallback for Linux
+        if os.name != "nt" and not os.path.isfile(target):
+            if os.path.isdir(os.path.dirname(target)):
+                dir_path = os.path.dirname(target)
+                filename = os.path.basename(target)
+                try:
+                    entries = os.listdir(dir_path)
+                except Exception:
+                    pass
+                else:
+                    filename_lower = filename.lower()
+                    for name in entries:
+                        if name.lower() == filename_lower:
+                            target = os.path.join(dir_path, name)
+                            break
+
         return target
 
     def Execute(self, path):
