@@ -28,7 +28,7 @@ from .vb_constants import (
     vbLongTime,
     vbShortTime,
 )
-from .vb_runtime import VBScriptRuntimeError, vbs_cstr, vbs_get_lcid_info
+from .vb_runtime import VBScriptRuntimeError, VBScriptCOMError, vbs_cstr, vbs_get_lcid_info
 from .vm.values import VBNull
 
 
@@ -228,11 +228,12 @@ def TimeValue(s):
 
 
 def CDate(s):
+    if s is VBNull:
+        raise VBScriptCOMError(94, "Invalid use of Null")
     try:
         return _parse_iso_datetime(str(s))
     except VBScriptRuntimeError:
         # Re-raise as Type mismatch (13) for VBScript compatibility
-        from .vb_runtime import VBScriptCOMError
         raise VBScriptCOMError(13, "Type mismatch")
 
 

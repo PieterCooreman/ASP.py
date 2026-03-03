@@ -231,7 +231,10 @@ def parse_asp_file_to_nodes(path: str, docroot: str, current_virtual: str) -> Li
     def flush_block_granular():
         if current_block:
             prog, src = compile_asp_nodes_cached(current_block)
-            merged_nodes.append(ScriptNode(src, 0, 0, program=prog))
+            first = current_block[0]
+            start_line = int(getattr(first, 'start_line', 1) or 1)
+            start_col = int(getattr(first, 'start_col', 1) or 1)
+            merged_nodes.append(ScriptNode(src, start_line, start_col, program=prog))
             current_block.clear()
 
     try:
@@ -265,7 +268,7 @@ def parse_asp_file_to_nodes(path: str, docroot: str, current_virtual: str) -> Li
             exp_nodes = parse_asp_page(exp_text)
             prog, src = compile_asp_nodes(exp_nodes)
             # Return list with single ScriptNode, and deps set
-            return [ScriptNode(src, 0, 0, program=prog)], deps
+            return [ScriptNode(src, 1, 1, program=prog)], deps
 
         # We need to use 'path' as the cache key.
         # However, 'text' argument to expand_includes is passed from above.
@@ -322,9 +325,9 @@ def parse_asp_page(text: str) -> List[object]:
         block_col = col + 2
 
         code = text[start + 2:end]
-        code_stripped = code.strip()
-        cur_is_expr = bool(code_stripped.startswith('='))
-        cur_is_directive = bool(code_stripped.startswith('@'))
+        code_probe = code.lstrip(' \t\r\n')
+        cur_is_expr = bool(code_probe.startswith('='))
+        cur_is_directive = bool(code_probe.startswith('@'))
 
         if html:
             if (prev_was_code or prev_was_directive) and (cur_is_expr or (not cur_is_expr and not cur_is_directive)) and html.strip(' \t\r\n') == '':
@@ -342,13 +345,13 @@ def parse_asp_page(text: str) -> List[object]:
             prev_was_code = False
             prev_was_directive = True
         elif cur_is_expr:
-            expr_src = code_stripped[1:].strip()
+            expr_src = code_probe[1:].strip()
             nodes.append(ExprNode(expr_src, block_line, block_col))
             prev_was_expr = True
             prev_was_code = True
             prev_was_directive = False
         else:
-            nodes.append(ScriptNode(code_stripped, block_line, block_col))
+            nodes.append(ScriptNode(code, block_line, block_col))
             prev_was_expr = False
             prev_was_code = True
             prev_was_directive = False
@@ -541,24 +544,31 @@ def build_vbscript_from_nodes(nodes) -> str:
     return "\n".join(out_lines) + "\n"
 
 
-def _attach_location(exc: Exception, interpreter, start_line: int, start_col: int, src: str):
+def _attach_location(exc: Exception, interpreter, start_line: int, start_col: int, src: str, file_path: str | None = None):
     # Best-effort location info; stored on the exception object.
     if hasattr(exc, 'asp_location_attached'):
         return
     setattr(exc, 'asp_location_attached', True)
+    if file_path:
+        setattr(exc, 'asp_file', str(file_path))
     pos = getattr(exc, 'vbs_pos', None)
     if pos is not None and isinstance(src, str) and 0 <= int(pos) <= len(src):
         pos = int(pos)
-        line = src.count('\n', 0, pos) + 1
+        rel_line = src.count('\n', 0, pos) + 1
         last_nl = src.rfind('\n', 0, pos)
-        col = pos + 1 if last_nl == -1 else pos - last_nl
+        rel_col = pos + 1 if last_nl == -1 else pos - last_nl
         line_start = 0 if last_nl == -1 else last_nl + 1
         line_end = src.find('\n', pos)
         if line_end == -1:
             line_end = len(src)
         src_line = src[line_start:line_end]
-        setattr(exc, 'asp_start_line', int(line))
-        setattr(exc, 'asp_start_col', int(col))
+        abs_line = int(start_line) + int(rel_line) - 1
+        if int(rel_line) == 1:
+            abs_col = int(start_col) + int(rel_col) - 1
+        else:
+            abs_col = int(rel_col)
+        setattr(exc, 'asp_start_line', int(abs_line))
+        setattr(exc, 'asp_start_col', int(abs_col))
         setattr(exc, 'asp_source_block', src_line)
         return
     setattr(exc, 'asp_start_line', int(start_line))

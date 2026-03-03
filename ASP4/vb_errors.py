@@ -48,6 +48,7 @@ RUNTIME_ERRORS = {
     'INVALID_PROC_CALL': ErrorDef(5, '800A0005', "Invalid procedure call or argument"),
     'SUBSCRIPT_OUT_OF_RANGE': ErrorDef(9, '800A0009', "Subscript out of range"),
     'TYPE_MISMATCH': ErrorDef(13, '800A000D', "Type mismatch"),
+    'INVALID_USE_OF_NULL': ErrorDef(94, '800A005E', "Invalid use of Null"),
     'FILE_NOT_FOUND': ErrorDef(53, '800A0035', "File not found"),
     'PERMISSION_DENIED': ErrorDef(70, '800A0046', "Permission denied"),
     'OBJECT_REQUIRED': ErrorDef(424, '800A01A8', "Object required"),

@@ -287,6 +287,26 @@ class ASP4IMAP:
     def Delete(self, msg_num):
         return self.Store(msg_num, r"(\Deleted)", "+FLAGS")
 
+    def Dele(self, msg_num):
+        # POP3-style alias for parity with ASP4POP3.
+        return self.Delete(msg_num)
+
+    def DeleteAll(self):
+        ids = self.Search("ALL")
+        n = 0
+        try:
+            ub = int(ids.ubound(1))
+        except Exception:
+            ub = -1
+        for i in range(0, ub + 1):
+            seq = vbs_cstr(ids.__vbs_index_get__(i)).strip()
+            if not seq:
+                continue
+            self.Delete(seq)
+            n += 1
+        self.LastResponse = f"Marked {n} message(s) as \\Deleted"
+        return n
+
     def Expunge(self):
         mb = self._require_conn()
         typ, data = mb.expunge()

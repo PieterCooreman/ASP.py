@@ -289,28 +289,39 @@ def ChrB(charcode):
     return bytes([n])
 
 def CByte(expr):
+    if expr is VBNull: raise_runtime('INVALID_USE_OF_NULL')
     n = int(_to_int(expr))
     if n < 0 or n > 255: raise_runtime('OVERFLOW')
     return n
 
 def CCur(expr):
+    if expr is VBNull: raise_runtime('INVALID_USE_OF_NULL')
     d = _to_decimal(expr)
     return d.quantize(Decimal('0.0000'), rounding=ROUND_HALF_EVEN)
 
 def CDbl(expr):
+    if expr is VBNull: raise_runtime('INVALID_USE_OF_NULL')
     return float(_to_number(expr))
 
 def CSng(expr):
+    if expr is VBNull: raise_runtime('INVALID_USE_OF_NULL')
     return float(_to_number(expr))
 
 def CInt(expr):
+    if expr is VBNull: raise_runtime('INVALID_USE_OF_NULL')
     return int(_round_bankers(_to_decimal(expr)))
 
 def CLng(expr):
+    if expr is VBNull: raise_runtime('INVALID_USE_OF_NULL')
     return int(_round_bankers(_to_decimal(expr)))
 
 def CStr(expr):
+    if expr is VBNull: raise_runtime('INVALID_USE_OF_NULL')
     return vbs_cstr(expr)
+
+def CBool(expr):
+    if expr is VBNull: raise_runtime('INVALID_USE_OF_NULL')
+    return vbs_cbool(expr)
 
 def Hex(number):
     n = int(_to_int(number))
@@ -445,6 +456,7 @@ def Fix(number):
     return int(x)
 
 def _to_number(v):
+    if v is VBNull: raise_runtime('INVALID_USE_OF_NULL')
     if isinstance(v, bool): return 1 if v else 0
     if isinstance(v, (int, float)): return v
     if isinstance(v, Decimal): return float(v)
@@ -460,6 +472,7 @@ def _to_int(v):
     return int(_to_number(v))
 
 def _to_decimal(v) -> Decimal:
+    if v is VBNull: raise_runtime('INVALID_USE_OF_NULL')
     if isinstance(v, Decimal): return v
     if isinstance(v, bool): return Decimal(1 if v else 0)
     if isinstance(v, (int, float)): return Decimal(str(v))

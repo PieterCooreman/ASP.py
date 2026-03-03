@@ -232,6 +232,19 @@ class ASP4POP3:
         self.LastResponse = vbs_cstr(resp)
         return self.LastResponse
 
+    def Delete(self, msg_num):
+        # Alias for VBScript callers that prefer .Delete(n)
+        return self.Dele(msg_num)
+
+    def DeleteAll(self):
+        mb = self._require_conn()
+        count, _total = mb.stat()
+        n = int(count)
+        for i in range(1, n + 1):
+            mb.dele(i)
+        self.LastResponse = f"Marked {n} message(s) for deletion"
+        return n
+
     def Noop(self):
         mb = self._require_conn()
         resp = mb.noop()

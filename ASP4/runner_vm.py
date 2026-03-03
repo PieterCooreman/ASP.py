@@ -390,6 +390,18 @@ def render_asp_vm(vb_text: str, request=None, session=None, application=None, se
         # It is not an error.
         pass
     except Exception as e:
+        try:
+            if not getattr(e, 'asp_start_line', 0):
+                _attach_location(
+                    e,
+                    interp,
+                    int(getattr(interp, '_current_asp_line', 1) or 1),
+                    int(getattr(interp, '_current_asp_col', 1) or 1),
+                    str(getattr(interp, '_current_vbs_src', '') or ''),
+                    str(getattr(interp, '_current_asp_path', request.Path if request else '/unknown.asp') or '/unknown.asp'),
+                )
+        except Exception:
+            pass
         # Generate IIS-style error page
         asp_err = make_asp_error(request.Path if request else '/unknown.asp', e)
         
@@ -461,7 +473,7 @@ def exec_file_granular(phys_path: str, docroot: str, virt_path: str, interp: VBI
     
     visited = set()
     
-    def collect(n_list):
+    def collect(n_list, cur_virt_path):
         for n in n_list:
             if isinstance(n, IncludeNode):
                 if n.path in visited:
@@ -472,9 +484,9 @@ def exec_file_granular(phys_path: str, docroot: str, virt_path: str, interp: VBI
                 if inc_nodes is None:
                     e = IncludeError(f"Include file not found: {n.virtual}")
                     # Attach location of include directive in parent file
-                    _attach_location(e, interp, n.start_line, n.start_col, "")
+                    _attach_location(e, interp, n.start_line, n.start_col, "", cur_virt_path)
                     raise e
-                collect(inc_nodes)
+                collect(inc_nodes, n.virtual)
             elif isinstance(n, ScriptNode):
                 # Ensure program is parsed
                 if n.program is None:
@@ -486,7 +498,8 @@ def exec_file_granular(phys_path: str, docroot: str, virt_path: str, interp: VBI
                     # as long as blocks don't split statements.
                     try:
                         n.program, _ = compile_asp_nodes([n])
-                    except Exception:
+                    except Exception as e:
+                        _attach_location(e, interp, n.start_line, n.start_col, n.code, cur_virt_path)
                         # If parsing fails here, it might be due to split blocks.
                         # However, parse_asp_file_to_nodes attempts to merge split blocks.
                         # So if we are here, it should be parseable.
@@ -517,14 +530,14 @@ def exec_file_granular(phys_path: str, docroot: str, virt_path: str, interp: VBI
                         # print(f"DEBUG: Registering {s.name}")
                         interp.exec_stmt(s)
 
-    collect(nodes)
+    collect(nodes, virt_path)
     
     # 3. Execute Global Code
     # We walk the tree again and execute statements.
     
     visited_exec = set()
     
-    def run(n_list):
+    def run(n_list, cur_virt_path):
         for n in n_list:
             if isinstance(n, IncludeNode):
                 if n.path in visited_exec:
@@ -533,15 +546,20 @@ def exec_file_granular(phys_path: str, docroot: str, virt_path: str, interp: VBI
                 inc_nodes = get_cached_asp_nodes(n.path, parse_fn)
                 if inc_nodes is None:
                     e = IncludeError(f"Include file not found: {n.virtual}")
-                    _attach_location(e, interp, n.start_line, n.start_col, "")
+                    _attach_location(e, interp, n.start_line, n.start_col, "", cur_virt_path)
                     raise e
-                run(inc_nodes)
+                run(inc_nodes, n.virtual)
             elif isinstance(n, ScriptNode):
+                interp._current_vbs_src = n.code
+                interp._current_asp_path = cur_virt_path
+                interp._current_asp_line = int(n.start_line)
+                interp._current_asp_col = int(n.start_col)
                 # Ensure program is parsed (if missed in collect for some reason, though collect should have done it)
                 if n.program is None:
                     try:
                         n.program, _ = compile_asp_nodes([n])
-                    except Exception:
+                    except Exception as e:
+                        _attach_location(e, interp, n.start_line, n.start_col, n.code, cur_virt_path)
                         raise
 
                 if n.program:
@@ -556,8 +574,13 @@ def exec_file_granular(phys_path: str, docroot: str, virt_path: str, interp: VBI
                             # Attach location info if missing
                             if getattr(e, 'vbs_pos', None) is None:
                                 setattr(e, 'vbs_pos', getattr(s, '_pos', None))
+                            _attach_location(e, interp, n.start_line, n.start_col, n.code, cur_virt_path)
                             raise
             elif isinstance(n, ExprNode):
+                interp._current_vbs_src = n.expr
+                interp._current_asp_path = cur_virt_path
+                interp._current_asp_line = int(n.start_line)
+                interp._current_asp_col = int(n.start_col)
                 # We need to compile expression on the fly?
                 # ExprNode just has string.
                 # `compile_asp_nodes` turned this into Response.Write.
@@ -575,10 +598,10 @@ def exec_file_granular(phys_path: str, docroot: str, virt_path: str, interp: VBI
                     val = interp.eval_expr(expr_ast)
                     interp.ctx.Response.Write(val)
                 except Exception as e:
-                    # Fallback or error
-                    interp.ctx.Response.Write(f"Error in expression: {e}")
+                    _attach_location(e, interp, n.start_line, n.start_col, n.expr, cur_virt_path)
+                    raise
             elif hasattr(n, 'text'): # HtmlNode
                 # Assuming HtmlNode
                 interp.ctx.Response.Write(n.text)
 
-    run(nodes)
+    run(nodes, virt_path)

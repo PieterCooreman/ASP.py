@@ -12,8 +12,9 @@ from typing import Any, cast
 import mimetypes
 import datetime
 
-from .vb_runtime import vbs_cstr, VBScriptRuntimeError
+from .vb_runtime import vbs_cstr, VBScriptRuntimeError, VBScriptCOMError
 from .vb_errors import VBScriptError
+from .vm.values import VBNull
 
 
 def make_asp_error(request_path: str, exc: Exception) -> ASPError:
@@ -62,13 +63,15 @@ def make_asp_error(request_path: str, exc: Exception) -> ASPError:
         category = "ASP4 runtime error"
         # 80004005 is "Unspecified error", which is standard for unmapped errors.
 
+    err_file = getattr(exc, 'asp_file', '') or request_path
+
     return ASPError(
         number=number,
         description=description,
         category=category,
         asp_code="",
         asp_description="",
-        file=request_path,
+        file=err_file,
         line=start_line,
         column=start_col,
         source=src_line,
@@ -308,15 +311,21 @@ class Server:
         raise Exception(f"Server.CreateObject not supported: {progid}")
 
     def HTMLEncode(self, s):
+        if s is VBNull:
+            raise VBScriptCOMError(94, "Invalid use of Null")
         # VBScript coerces Empty/Nothing/Null to an empty string in most
         # string contexts; avoid leaking sentinel reprs like "VBEmpty".
         return html.escape(vbs_cstr(s), quote=True)
 
     def URLEncode(self, s):
+        if s is VBNull:
+            raise VBScriptCOMError(94, "Invalid use of Null")
         # Use '+' for spaces like typical URL encoding
         return urllib.parse.quote_plus(vbs_cstr(s))
 
     def MapPath(self, path):
+        if path is VBNull:
+            raise VBScriptCOMError(94, "Invalid use of Null")
         p = str(path)
         # Remove querystring
         p = p.split('?', 1)[0]
