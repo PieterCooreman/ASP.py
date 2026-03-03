@@ -124,7 +124,7 @@
 						<div class="card h-100 shadow-sm border-0">
 							<div class="card-body text-center">
 								<i class="bi <%=icons(iconIndex)%> <%=colours(colourIndex)%> fs-1 mb-3 d-block"></i>
-								<h5 class="card-title fw-semibold"><%=ProperCase(subFolder.Name)%></h5>
+								<h5 class="card-title fw-semibold"><%=subFolder.Name%></h5>
 								<p class="card-text text-muted small">Sample application</p>
 							</div>
 							<div class="card-footer bg-transparent border-0 text-center pb-3">
