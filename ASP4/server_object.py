@@ -667,9 +667,60 @@ class VBScriptRegExp:
         r = self._compile()
         text = vbs_cstr(s)
         repl = vbs_cstr(replace_with)
+        def _expand(m):
+            return self._expand_vbscript_replacement(m, repl, text)
         if bool(self.Global):
-            return r.sub(repl, text)
-        return r.sub(repl, text, count=1)
+            return r.sub(_expand, text)
+        return r.sub(_expand, text, count=1)
+
+    def _expand_vbscript_replacement(self, m, repl: str, text: str) -> str:
+        out: list[str] = []
+        i = 0
+        n = len(repl)
+        while i < n:
+            ch = repl[i]
+            if ch != '$' or i + 1 >= n:
+                out.append(ch)
+                i += 1
+                continue
+
+            nxt = repl[i + 1]
+            if nxt == '$':
+                out.append('$')
+                i += 2
+                continue
+            if nxt == '&':
+                out.append(m.group(0))
+                i += 2
+                continue
+            if nxt == '`':
+                out.append(text[:m.start()])
+                i += 2
+                continue
+            if nxt == "'":
+                out.append(text[m.end():])
+                i += 2
+                continue
+            if nxt.isdigit():
+                j = i + 1
+                while j < n and repl[j].isdigit():
+                    j += 1
+                try:
+                    idx = int(repl[i + 1:j])
+                except Exception:
+                    idx = -1
+                if idx > 0:
+                    try:
+                        val = m.group(idx)
+                    except Exception:
+                        val = ""
+                    out.append(val if val is not None else "")
+                    i = j
+                    continue
+
+            out.append('$')
+            i += 1
+        return ''.join(out)
 
     def Execute(self, s):
         r = self._compile()

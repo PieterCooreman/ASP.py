@@ -15,11 +15,28 @@ request-scoped and are not shared across threads.
 from __future__ import annotations
 
 import datetime
+import importlib
 import os
 import re
 import sqlite3
 import threading
+from dataclasses import dataclass
 from typing import Any, Optional
+
+try:
+    import pyodbc  # type: ignore
+except Exception:
+    pyodbc = None
+
+
+def _ensure_pyodbc():
+    global pyodbc
+    if pyodbc is None:
+        try:
+            pyodbc = importlib.import_module('pyodbc')
+        except Exception:
+            pyodbc = None
+    return pyodbc
 
 from .vb_runtime import vbs_cstr, vbs_cbool
 from .vm.values import VBEmpty, VBNothing, VBNull
@@ -118,35 +135,591 @@ _SQLITE_TYPE_MAP = {
 from .vb_errors import raise_runtime
 
 
-def _resolve_db_path(conn_str: str, docroot: str) -> Optional[str]:
-    """Extract a filesystem path from an ADO connection string.
+@dataclass
+class ParsedConnectionString:
+    raw: str
+    attrs: dict[str, str]
+    provider_kind: str
+    data_source: str
+    errors: list[str]
 
-    Supports:
-    - Provider=SQLite;Data Source=<path>  (custom)
-    - Data Source=<path>
-    - <path>  (bare path)
-    """
+
+@dataclass
+class ProviderCapabilities:
+    can_open: bool
+    uses_stdlib_only: bool
+    supports_transactions: bool
+    supports_positional_params: bool
+    supports_named_params: bool
+    supports_multiple_recordsets: bool
+    supports_schema_discovery: bool
+    notes: str = ""
+
+
+def _split_conn_parts(s: str) -> list[str]:
+    parts: list[str] = []
+    buf: list[str] = []
+    in_quote = False
+    i = 0
+    while i < len(s):
+        ch = s[i]
+        if ch == '"':
+            in_quote = not in_quote
+            buf.append(ch)
+            i += 1
+            continue
+        if ch == ';' and not in_quote:
+            part = ''.join(buf).strip()
+            if part:
+                parts.append(part)
+            buf = []
+            i += 1
+            continue
+        buf.append(ch)
+        i += 1
+    tail = ''.join(buf).strip()
+    if tail:
+        parts.append(tail)
+    return parts
+
+
+def _parse_conn_attrs(conn_str: str) -> tuple[dict[str, str], str]:
     cs = conn_str.strip()
+    attrs: dict[str, str] = {}
+    bare = ""
+    has_equals = False
+    for part in _split_conn_parts(cs):
+        if '=' in part:
+            has_equals = True
+            k, v = part.split('=', 1)
+            key = str(k).strip().lower()
+            val = str(v).strip()
+            if len(val) >= 2 and val[0] == '"' and val[-1] == '"':
+                val = val[1:-1]
+            attrs[key] = val
+    if not has_equals and cs:
+        bare = cs
+    return attrs, bare
 
-    # Data Source= (case-insensitive)
-    m = re.search(r'(?i)Data\s+Source\s*=\s*([^;]+)', cs)
-    if m:
-        raw = m.group(1).strip()
-    else:
-        # If no keyword, treat whole string as path
-        raw = cs
 
-    # Expand virtual paths and relative paths against docroot
+def _pick_attr(attrs: dict[str, str], *names: str) -> str:
+    for n in names:
+        if n in attrs and attrs[n] != "":
+            return attrs[n]
+    return ""
+
+
+def _classify_conn_provider(attrs: dict[str, str], bare: str) -> str:
+    provider = _pick_attr(attrs, 'provider').lower()
+    driver = _pick_attr(attrs, 'driver').lower()
+    dsn = _pick_attr(attrs, 'dsn').strip()
+    ext = _pick_attr(attrs, 'extended properties').lower()
+    data_source = _pick_attr(attrs, 'data source', 'datasource', 'server', 'address', 'addr', 'network address')
+    candidate = (data_source or bare).lower()
+
+    if provider:
+        if 'sqlite' in provider:
+            return 'sqlite'
+        if provider == 'sqloledb' or 'sqlncli' in provider or 'msoledbsql' in provider:
+            return 'sqlserver'
+        if provider.startswith('microsoft.jet.oledb'):
+            if 'excel' in ext:
+                return 'excel'
+            if 'text' in ext or 'csv' in ext:
+                return 'text'
+            return 'access'
+        if provider.startswith('microsoft.ace.oledb'):
+            if 'excel' in ext:
+                return 'excel'
+            if 'text' in ext or 'csv' in ext:
+                return 'text'
+            return 'access'
+        if 'oraoledb.oracle' in provider:
+            return 'oracle'
+        if 'mysql' in provider:
+            return 'mysql'
+        if 'mariadb' in provider:
+            return 'mariadb'
+        if 'postgres' in provider or 'pgsql' in provider:
+            return 'postgresql'
+
+    if dsn:
+        return 'odbc'
+
+    if driver:
+        if 'mysql' in driver:
+            return 'mysql'
+        if 'sql server' in driver:
+            return 'sqlserver'
+        if 'oracle' in driver:
+            return 'oracle'
+        if 'postgres' in driver:
+            return 'postgresql'
+        if 'sqlite' in driver:
+            return 'sqlite'
+        return 'odbc'
+
+    if candidate.endswith(('.sqlite', '.sqlite3', '.db', '.db3')):
+        return 'sqlite'
+    if candidate.endswith(('.xls', '.xlsx', '.xlsm', '.xlsb')):
+        return 'excel'
+    if candidate.endswith(('.mdb', '.accdb')):
+        return 'access'
+
+    return 'unknown'
+
+
+def parse_connection_string(conn_str: str) -> ParsedConnectionString:
+    attrs, bare = _parse_conn_attrs(conn_str)
+    provider_kind = _classify_conn_provider(attrs, bare)
+    data_source = _pick_attr(
+        attrs,
+        'data source',
+        'datasource',
+        'database',
+        'initial catalog',
+    ) or bare
+    return ParsedConnectionString(
+        raw=conn_str,
+        attrs=attrs,
+        provider_kind=provider_kind,
+        data_source=data_source,
+        errors=[],
+    )
+
+
+def _resolve_sqlite_path(info: ParsedConnectionString, docroot: str) -> Optional[str]:
+    raw = (info.data_source or '').strip()
+    if not raw:
+        return None
     raw = raw.replace('\\', os.sep).replace('/', os.sep)
     if not os.path.isabs(raw):
         raw = os.path.join(docroot, raw)
     return os.path.abspath(raw)
 
 
-def _conn_or_raise(conn: 'ADOConnection') -> sqlite3.Connection:
+def _resolve_access_path(info: ParsedConnectionString, docroot: str) -> Optional[str]:
+    raw = (info.data_source or '').strip()
+    if not raw:
+        return None
+    raw = raw.replace('\\', os.sep).replace('/', os.sep)
+    if not os.path.isabs(raw):
+        raw = os.path.join(docroot, raw)
+    return os.path.abspath(raw)
+
+
+class _ADOProviderAdapter:
+    kind = "unknown"
+    capabilities = ProviderCapabilities(
+        can_open=False,
+        uses_stdlib_only=False,
+        supports_transactions=False,
+        supports_positional_params=False,
+        supports_named_params=False,
+        supports_multiple_recordsets=False,
+        supports_schema_discovery=False,
+        notes="Provider adapter scaffold only",
+    )
+
+    def get_capabilities(self) -> ProviderCapabilities:
+        return self.capabilities
+
+    def open(self, conn: 'ADOConnection', info: ParsedConnectionString):
+        raise_runtime(
+            'ADO_UNSPECIFIED',
+            f"Connection provider not available in this ASP4 runtime: {info.provider_kind}",
+        )
+
+
+class _SQLiteProviderAdapter(_ADOProviderAdapter):
+    kind = "sqlite"
+    capabilities = ProviderCapabilities(
+        can_open=True,
+        uses_stdlib_only=True,
+        supports_transactions=True,
+        supports_positional_params=True,
+        supports_named_params=False,
+        supports_multiple_recordsets=True,
+        supports_schema_discovery=True,
+        notes="Built-in sqlite3 backend",
+    )
+
+    def open(self, conn: 'ADOConnection', info: ParsedConnectionString):
+        phys = _resolve_sqlite_path(info, conn._docroot)
+        if not phys:
+            raise_runtime('ADO_UNSPECIFIED', "Invalid data source")
+        assert phys is not None
+        if not os.path.isfile(phys):
+            raise_runtime('FILE_NOT_FOUND', phys)
+        try:
+            db = sqlite3.connect(phys, check_same_thread=False)
+            db.isolation_level = None
+            db.row_factory = None
+            db.execute("PRAGMA journal_mode=WAL")
+            db.execute("PRAGMA foreign_keys=ON")
+            conn._conn = db
+            conn._is_open = True
+            conn.State = adStateOpen
+            conn._db_path = phys
+            conn._provider_kind = self.kind
+            _ado_thread.last_conn = conn
+            conns = _get_open_conns()
+            if conn not in conns:
+                conns.append(conn)
+        except Exception as e:
+            raise_runtime('ADO_UNSPECIFIED', f"Connection Open error: {e}")
+
+
+class _UnavailableProviderAdapter(_ADOProviderAdapter):
+    def __init__(self, kind: str, *, notes: str = ""):
+        self.kind = kind or "unknown"
+        self.capabilities = ProviderCapabilities(
+            can_open=False,
+            uses_stdlib_only=False,
+            supports_transactions=False,
+            supports_positional_params=False,
+            supports_named_params=False,
+            supports_multiple_recordsets=False,
+            supports_schema_discovery=False,
+            notes=notes or "Planned provider scaffold; adapter not implemented",
+        )
+
+    def open(self, conn: 'ADOConnection', info: ParsedConnectionString):
+        raise_runtime(
+            'ADO_UNSPECIFIED',
+            (
+                f"Connection provider not available in this ASP4 runtime: {self.kind}. "
+                "Built-in support is currently SQLite, Access, Excel, and ODBC (pyodbc) only. "
+                "Install an external adapter/driver path or migrate this connection string to SQLite."
+            ),
+        )
+
+
+class _AccessProviderAdapter(_ADOProviderAdapter):
+    kind = "access"
+    capabilities = ProviderCapabilities(
+        can_open=True,
+        uses_stdlib_only=False,
+        supports_transactions=True,
+        supports_positional_params=True,
+        supports_named_params=False,
+        supports_multiple_recordsets=True,
+        supports_schema_discovery=False,
+        notes="Requires pyodbc + Microsoft Access ODBC driver",
+    )
+
+    def open(self, conn: 'ADOConnection', info: ParsedConnectionString):
+        odb = _ensure_pyodbc()
+        if odb is None:
+            raise_runtime(
+                'ADO_UNSPECIFIED',
+                "Access provider requires pyodbc module. Install with: python -m pip install pyodbc",
+            )
+        assert odb is not None
+
+        phys = _resolve_access_path(info, conn._docroot)
+        if not phys:
+            raise_runtime('ADO_UNSPECIFIED', "Invalid data source")
+        assert phys is not None
+        if not os.path.isfile(phys):
+            raise_runtime('FILE_NOT_FOUND', phys)
+
+        lower_phys = phys.lower()
+        if not (lower_phys.endswith('.mdb') or lower_phys.endswith('.accdb')):
+            raise_runtime('ADO_UNSPECIFIED', f"Access data source must be .mdb or .accdb: {phys}")
+
+        driver = info.attrs.get('driver', '').strip()
+        if not driver:
+            driver = 'Microsoft Access Driver (*.mdb, *.accdb)'
+        if not driver.startswith('{'):
+            driver = '{' + driver
+        if not driver.endswith('}'):
+            driver = driver + '}'
+
+        uid = _pick_attr(info.attrs, 'user id', 'uid', 'user')
+        pwd = _pick_attr(info.attrs, 'password', 'pwd')
+        parts = [f"Driver={driver}", f"DBQ={phys}"]
+        if uid:
+            parts.append(f"Uid={uid}")
+        if pwd:
+            parts.append(f"Pwd={pwd}")
+        odbc_cs = ';'.join(parts) + ';'
+
+        try:
+            db = odb.connect(odbc_cs, autocommit=True)
+            conn._conn = db
+            conn._is_open = True
+            conn.State = adStateOpen
+            conn._db_path = phys
+            conn._provider_kind = self.kind
+            _ado_thread.last_conn = conn
+            conns = _get_open_conns()
+            if conn not in conns:
+                conns.append(conn)
+        except Exception as e:
+            raise_runtime('ADO_UNSPECIFIED', f"Connection Open error: {e}")
+
+
+class _ExcelProviderAdapter(_ADOProviderAdapter):
+    kind = "excel"
+    capabilities = ProviderCapabilities(
+        can_open=True,
+        uses_stdlib_only=False,
+        supports_transactions=False,
+        supports_positional_params=True,
+        supports_named_params=False,
+        supports_multiple_recordsets=True,
+        supports_schema_discovery=False,
+        notes="Read-only adapter via pyodbc + Microsoft Excel ODBC driver",
+    )
+
+    def open(self, conn: 'ADOConnection', info: ParsedConnectionString):
+        odb = _ensure_pyodbc()
+        if odb is None:
+            raise_runtime(
+                'ADO_UNSPECIFIED',
+                "Excel provider requires pyodbc module. Install with: python -m pip install pyodbc",
+            )
+        assert odb is not None
+
+        phys = _resolve_access_path(info, conn._docroot)
+        if not phys:
+            raise_runtime('ADO_UNSPECIFIED', "Invalid data source")
+        assert phys is not None
+        if not os.path.isfile(phys):
+            raise_runtime('FILE_NOT_FOUND', phys)
+
+        lower_phys = phys.lower()
+        if not lower_phys.endswith(('.xls', '.xlsx', '.xlsm', '.xlsb')):
+            raise_runtime('ADO_UNSPECIFIED', f"Excel data source must be .xls, .xlsx, .xlsm, or .xlsb: {phys}")
+
+        driver = info.attrs.get('driver', '').strip()
+        if not driver:
+            driver = 'Microsoft Excel Driver (*.xls, *.xlsx, *.xlsm, *.xlsb)'
+        if not driver.startswith('{'):
+            driver = '{' + driver
+        if not driver.endswith('}'):
+            driver = driver + '}'
+
+        ext_props = _pick_attr(info.attrs, 'extended properties')
+        parts = [f"Driver={driver}", f"DBQ={phys}", "ReadOnly=1"]
+        if ext_props:
+            parts.append(f'Extended Properties="{ext_props}"')
+        odbc_cs = ';'.join(parts) + ';'
+
+        try:
+            db = odb.connect(odbc_cs, autocommit=True)
+            conn._conn = db
+            conn._is_open = True
+            conn.State = adStateOpen
+            conn._db_path = phys
+            conn._provider_kind = self.kind
+            _ado_thread.last_conn = conn
+            conns = _get_open_conns()
+            if conn not in conns:
+                conns.append(conn)
+        except Exception as e:
+            raise_runtime('ADO_UNSPECIFIED', f"Connection Open error: {e}")
+
+
+class _ODBCProviderAdapter(_ADOProviderAdapter):
+    kind = "odbc"
+    capabilities = ProviderCapabilities(
+        can_open=True,
+        uses_stdlib_only=False,
+        supports_transactions=True,
+        supports_positional_params=True,
+        supports_named_params=False,
+        supports_multiple_recordsets=True,
+        supports_schema_discovery=False,
+        notes="Generic ODBC adapter via pyodbc (DSN or Driver connection strings)",
+    )
+
+    def _pick_installed_driver(self, odb, preferred: list[str]) -> str:
+        try:
+            drivers = [str(d) for d in odb.drivers()]
+        except Exception:
+            drivers = []
+        if not drivers:
+            return ""
+
+        pref_lower = [p.lower() for p in preferred]
+        for i, p in enumerate(pref_lower):
+            for d in drivers:
+                dl = d.lower()
+                if dl == p:
+                    return d
+                if p in dl:
+                    return d
+        return ""
+
+    def _build_postgresql_odbc_attrs(self, odb, attrs: dict[str, str]) -> dict[str, str]:
+        out = dict(attrs)
+        if not _pick_attr(out, 'driver'):
+            drv = self._pick_installed_driver(
+                odb,
+                [
+                    'PostgreSQL Unicode(x64)',
+                    'PostgreSQL Unicode',
+                    'PostgreSQL ANSI(x64)',
+                    'PostgreSQL ANSI',
+                ],
+            )
+            if not drv:
+                raise_runtime(
+                    'ADO_UNSPECIFIED',
+                    (
+                        "No suitable PostgreSQL ODBC driver found. "
+                        "Install psqlODBC (Unicode/ANSI), or provide Driver={...} in the connection string."
+                    ),
+                )
+            out['driver'] = drv
+
+        # Normalize common ADO aliases to ODBC-friendly names.
+        if 'database' not in out and 'initial catalog' in out:
+            out['database'] = out['initial catalog']
+        if 'uid' not in out:
+            u = _pick_attr(out, 'user id', 'user')
+            if u:
+                out['uid'] = u
+        if 'pwd' not in out:
+            p = _pick_attr(out, 'password')
+            if p:
+                out['pwd'] = p
+        if 'server' not in out:
+            s = _pick_attr(out, 'data source', 'datasource')
+            if s:
+                out['server'] = s
+
+        if not _pick_attr(out, 'dsn') and not _pick_attr(out, 'server'):
+            raise_runtime(
+                'ADO_UNSPECIFIED',
+                "PostgreSQL ODBC connection requires Server=... (or DSN=...)",
+            )
+        return out
+
+    def open(self, conn: 'ADOConnection', info: ParsedConnectionString):
+        odb = _ensure_pyodbc()
+        if odb is None:
+            raise_runtime(
+                'ADO_UNSPECIFIED',
+                "ODBC provider requires pyodbc module. Install with: python -m pip install pyodbc",
+            )
+        assert odb is not None
+
+        attrs = dict(info.attrs)
+        if (info.provider_kind or '').lower() == 'postgresql':
+            attrs = self._build_postgresql_odbc_attrs(odb, attrs)
+
+        has_dsn = bool(_pick_attr(attrs, 'dsn'))
+        has_driver = bool(_pick_attr(attrs, 'driver'))
+        if not has_dsn and not has_driver:
+            raise_runtime(
+                'ADO_UNSPECIFIED',
+                "ODBC connection string must include DSN=... or Driver={...}",
+            )
+
+        parts: list[str] = []
+        for k, v in attrs.items():
+            lk = str(k).strip().lower()
+            if lk in ('provider',):
+                continue
+            key_out = k
+            if lk == 'data source':
+                key_out = 'Server'
+            elif lk == 'user id':
+                key_out = 'Uid'
+            elif lk == 'password':
+                key_out = 'Pwd'
+            elif lk == 'initial catalog':
+                key_out = 'Database'
+            elif lk == 'driver':
+                drv = str(v).strip()
+                if drv and not drv.startswith('{'):
+                    drv = '{' + drv
+                if drv and not drv.endswith('}'):
+                    drv = drv + '}'
+                v = drv
+            parts.append(f"{key_out}={v}")
+        odbc_cs = ';'.join(parts)
+        if odbc_cs and not odbc_cs.endswith(';'):
+            odbc_cs += ';'
+
+        try:
+            db = odb.connect(odbc_cs, autocommit=True)
+            conn._conn = db
+            conn._is_open = True
+            conn.State = adStateOpen
+            conn._db_path = ''
+            logical_kind = (info.provider_kind or '').strip().lower()
+            conn._provider_kind = logical_kind if logical_kind and logical_kind != 'unknown' else self.kind
+            _ado_thread.last_conn = conn
+            conns = _get_open_conns()
+            if conn not in conns:
+                conns.append(conn)
+        except Exception as e:
+            raise_runtime('ADO_UNSPECIFIED', f"Connection Open error: {e}")
+
+
+_PROVIDER_ADAPTERS: dict[str, _ADOProviderAdapter] = {
+    'sqlite': _SQLiteProviderAdapter(),
+    'access': _AccessProviderAdapter(),
+    'excel': _ExcelProviderAdapter(),
+    'odbc': _ODBCProviderAdapter(),
+    'postgresql': _ODBCProviderAdapter(),
+    'sqlserver': _UnavailableProviderAdapter('sqlserver', notes='Planned adapter contract; likely via ODBC or native SQL Server driver'),
+    'mysql': _UnavailableProviderAdapter('mysql', notes='Planned adapter contract; likely via ODBC or native MySQL driver'),
+    'mariadb': _UnavailableProviderAdapter('mariadb', notes='Planned adapter contract; likely via ODBC or native MariaDB driver'),
+    'oracle': _UnavailableProviderAdapter('oracle', notes='Planned adapter contract; typically requires external Oracle client/driver'),
+    'mongodb': _UnavailableProviderAdapter('mongodb', notes='Planned adapter contract; document model may need non-tabular ADO mapping'),
+    'text': _UnavailableProviderAdapter('text', notes='Planned adapter contract; CSV/text folder provider semantics'),
+}
+
+
+def register_provider_adapter(kind: str, adapter: _ADOProviderAdapter):
+    k = str(kind or '').strip().lower()
+    if not k:
+        raise ValueError("Provider kind is required")
+    _PROVIDER_ADAPTERS[k] = adapter
+
+
+def _get_provider_adapter(kind: str) -> _ADOProviderAdapter:
+    k = str(kind or '').strip().lower()
+    if k in _PROVIDER_ADAPTERS:
+        return _PROVIDER_ADAPTERS[k]
+    return _UnavailableProviderAdapter(k or 'unknown')
+
+
+def _should_route_to_odbc(info: ParsedConnectionString) -> bool:
+    kind = (info.provider_kind or '').lower()
+    attrs = info.attrs
+    if kind == 'postgresql':
+        return True
+    has_odbc_marker = ('dsn' in attrs) or ('driver' in attrs)
+    if not has_odbc_marker:
+        return False
+    if kind in ('sqlite', 'access', 'excel'):
+        return False
+    return kind in ('odbc', 'sqlserver', 'mysql', 'mariadb', 'postgresql', 'oracle', 'unknown')
+
+
+def list_provider_adapters() -> list[str]:
+    return sorted(_PROVIDER_ADAPTERS.keys())
+
+
+def get_provider_capabilities(kind: str) -> ProviderCapabilities:
+    adapter = _get_provider_adapter(kind)
+    return adapter.get_capabilities()
+
+
+def _conn_or_raise(conn: 'ADOConnection | None') -> Any:
+    if conn is None:
+        raise_runtime('ADO_OBJECT_CLOSED')
+    assert conn is not None
     db = conn._conn
     if db is None:
         raise_runtime('ADO_OBJECT_CLOSED')
+    assert db is not None
     return db
 
 
@@ -626,6 +1199,7 @@ class ADORecordset:
             conn = getattr(_ado_thread, 'last_conn', None)
             if conn is None:
                 raise_runtime('ADO_OBJECT_CLOSED', "No ActiveConnection")
+        assert conn is not None
         if isinstance(conn, str):
             # Connection string passed directly
             conn_str = conn
@@ -648,7 +1222,7 @@ class ADORecordset:
             desc = cursor.description or []
             self._set_col_names(
                 [d[0] for d in desc],
-                [_sqlite_type_to_ado(d[1]) for d in desc],
+                [_column_type_to_ado(d[1]) for d in desc],
             )
             self._rows = cursor.fetchall()
             self._base_rows = list(self._rows)
@@ -703,6 +1277,23 @@ class ADORecordset:
 
     # --- AddNew / Update / Delete ---
 
+    def _quote_ident(self, name: str) -> str:
+        n = str(name)
+        kind = ''
+        try:
+            kind = str(getattr(self.ActiveConnection, '_provider_kind', '') or '').lower()
+        except Exception:
+            kind = ''
+
+        if kind in ('sqlite', 'access', 'sqlserver', 'excel'):
+            return f'[{n}]'
+
+        # For ODBC-backed engines (postgres/mysql/oracle/generic), keep simple
+        # identifiers unquoted for cross-engine compatibility.
+        if re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', n):
+            return n
+        return '"' + n.replace('"', '""') + '"'
+
     def AddNew(self):
         self._is_addnew = True
         self._addnew_row = {name: None for name in self._col_names}
@@ -741,7 +1332,7 @@ class ADORecordset:
                 self._invalidate_fields_cache()
                 return
             raise_runtime('ADO_OBJECT_CLOSED', "Update: no connection")
-        db: sqlite3.Connection = _conn_or_raise(conn)
+        db = _conn_or_raise(conn)
         cur = db.cursor()
 
         if self._is_addnew:
@@ -754,14 +1345,16 @@ class ADORecordset:
             if not cols:
                 raise_runtime('ADO_ARGS_WRONG_TYPE', "AddNew: no columns to insert")
             ph = ','.join(['?' for _ in cols])
-            qcols = ','.join([f'[{c}]' for c in cols])
+            qcols = ','.join([self._quote_ident(c) for c in cols])
+            qtable = self._quote_ident(self._table_name) if self._table_name else ''
             try:
-                cur.execute(f"INSERT INTO [{self._table_name}] ({qcols}) VALUES ({ph})", vals)
+                cur.execute(f"INSERT INTO {qtable} ({qcols}) VALUES ({ph})", vals)
                 db.commit()
-                last_id = cur.lastrowid
+                last_id = getattr(cur, 'lastrowid', None)
                 # Refresh row with new pk
-                if self._pk_col:
-                    cur.execute(f"SELECT * FROM [{self._table_name}] WHERE [{self._pk_col}]=?", (last_id,))
+                if self._pk_col and last_id is not None:
+                    qpk = self._quote_ident(self._pk_col)
+                    cur.execute(f"SELECT * FROM {qtable} WHERE {qpk}=?", (last_id,))
                     row_data = cur.fetchone()
                     if row_data:
                         self._rows = [row_data]
@@ -789,15 +1382,17 @@ class ADORecordset:
             cur = db.cursor()
 
             # Prepare SET clause
-            sets = ', '.join([f'[{c}]=?' for c in pending.keys()])
+            sets = ', '.join([f'{self._quote_ident(c)}=?' for c in pending.keys()])
             set_vals = [_normalize_param(v) for v in pending.values()]
+            qtable = self._quote_ident(self._table_name)
 
             try:
                 if self._pk_col:
                     # PK-based update
                     pk_idx = self._col_names_lower.index(self._pk_col.lower())
                     pk_val = self._rows[self._cur_idx][pk_idx]
-                    cur.execute(f"UPDATE [{self._table_name}] SET {sets} WHERE [{self._pk_col}]=?", set_vals + [_normalize_param(pk_val)])
+                    qpk = self._quote_ident(self._pk_col)
+                    cur.execute(f"UPDATE {qtable} SET {sets} WHERE {qpk}=?", set_vals + [_normalize_param(pk_val)])
                 else:
                     # Fallback: Optimistic update using all columns in WHERE clause
                     where_parts = []
@@ -806,13 +1401,13 @@ class ADORecordset:
                     for i, col_name in enumerate(self._col_names):
                         val = original_row[i]
                         if val is None:
-                            where_parts.append(f"[{col_name}] IS NULL")
+                            where_parts.append(f"{self._quote_ident(col_name)} IS NULL")
                         else:
-                            where_parts.append(f"[{col_name}]=?")
+                            where_parts.append(f"{self._quote_ident(col_name)}=?")
                             where_vals.append(_normalize_param(val))
 
                     where_clause = " AND ".join(where_parts)
-                    cur.execute(f"UPDATE [{self._table_name}] SET {sets} WHERE {where_clause}", set_vals + where_vals)
+                    cur.execute(f"UPDATE {qtable} SET {sets} WHERE {where_clause}", set_vals + where_vals)
 
                     if cur.rowcount == 0:
                         # Row changed or deleted?
@@ -853,12 +1448,15 @@ class ADORecordset:
             raise_runtime('ADO_OBJECT_CLOSED', "Delete: no connection")
         if not self._table_name or not self._pk_col:
             raise_runtime('ADO_OBJECT_CLOSED', "Delete: cannot determine table/pk")
+        assert self._pk_col is not None
         pk_idx = self._col_names_lower.index(self._pk_col.lower())
         pk_val = self._rows[self._cur_idx][pk_idx]
         db = _conn_or_raise(conn)
         cur = db.cursor()
         try:
-            cur.execute(f"DELETE FROM [{self._table_name}] WHERE [{self._pk_col}]=?", (pk_val,))
+            qtable = self._quote_ident(self._table_name)
+            qpk = self._quote_ident(self._pk_col)
+            cur.execute(f"DELETE FROM {qtable} WHERE {qpk}=?", (pk_val,))
             db.commit()
             rows = list(self._rows)
             rows.pop(self._cur_idx)
@@ -1092,8 +1690,9 @@ class ADOConnection:
 
     def __init__(self, docroot: str = ''):
         self._docroot = docroot or _docroot_ref[0] or '.'
-        self._conn: Optional[sqlite3.Connection] = None
+        self._conn: Optional[Any] = None
         self._is_open: bool = False
+        self._provider_kind: str = 'unknown'
         self.ConnectionString: str = ''
         self.ConnectionTimeout: int = 30
         self.CommandTimeout: int = 30
@@ -1119,28 +1718,12 @@ class ADOConnection:
         if auto_escape_match:
             self._auto_escape = auto_escape_match.group(1).lower() in ('1', 'true', 'yes', 'on')
 
-        phys = _resolve_db_path(cs, self._docroot)
-        if not phys:
-            raise_runtime('ADO_UNSPECIFIED', "Invalid data source")
-        assert phys is not None
-        if not os.path.isfile(phys):
-            raise_runtime('FILE_NOT_FOUND', phys)
-        try:
-            self._conn = sqlite3.connect(phys, check_same_thread=False)
-            self._conn.isolation_level = None  # Enable manual transaction management
-            self._conn.row_factory = None  # tuple rows
-            # SQLite settings
-            self._conn.execute("PRAGMA journal_mode=WAL")
-            self._conn.execute("PRAGMA foreign_keys=ON")
-            self._is_open = True
-            self.State = adStateOpen
-            self._db_path = phys
-            _ado_thread.last_conn = self
-            conns = _get_open_conns()
-            if self not in conns:
-                conns.append(self)
-        except Exception as e:
-            raise_runtime('ADO_UNSPECIFIED', f"Connection Open error: {e}")
+        info = parse_connection_string(cs)
+        self.Provider = info.attrs.get('provider', info.provider_kind or 'unknown')
+        self._provider_kind = info.provider_kind or 'unknown'
+        adapter_kind = 'odbc' if _should_route_to_odbc(info) else self._provider_kind
+        adapter = _get_provider_adapter(adapter_kind)
+        adapter.open(self, info)
 
     def Close(self):
         if self._conn is not None:
@@ -1176,12 +1759,17 @@ class ADOConnection:
             statements = _split_sql_statements(translated)
             recordsets: list[ADORecordset] = []
             for stmt in statements:
+                if self._provider_kind == 'excel' and not _is_readonly_query(stmt):
+                    raise_runtime(
+                        'ADO_UNSPECIFIED',
+                        "Excel provider is read-only in ASP4. Only SELECT queries are supported.",
+                    )
                 cur.execute(stmt)
-                if cur.description:
+                if cur.description is not None:
                     rs = ADORecordset(self)
                     rs._set_col_names(
                         [d[0] for d in cur.description],
-                        [_sqlite_type_to_ado(d[1]) for d in cur.description],
+                        [_column_type_to_ado(d[1]) for d in cur.description],
                     )
                     rs._rows = cur.fetchall()
                     rs._base_rows = list(rs._rows)
@@ -1199,7 +1787,7 @@ class ADOConnection:
                 rs0 = recordsets[0]
                 rs0._next_recordsets = recordsets[1:]
                 return rs0
-            return None
+            return ADORecordset(self)
         except Exception as e:
             try:
                 db.rollback()
@@ -1214,7 +1802,13 @@ class ADOConnection:
             return 1
 
         db = _conn_or_raise(self)
-        db.execute("BEGIN")
+        if self._provider_kind == 'sqlite':
+            db.execute("BEGIN")
+        else:
+            try:
+                db.autocommit = False
+            except Exception:
+                pass
         self._in_transaction = True
         return 1
 
@@ -1225,24 +1819,38 @@ class ADOConnection:
 
             db = _conn_or_raise(self)
             try:
-                db.execute("COMMIT")
-            except sqlite3.OperationalError as e:
-                if "no transaction is active" in str(e):
-                    pass
+                if self._provider_kind == 'sqlite':
+                    db.execute("COMMIT")
                 else:
+                    db.commit()
+            except Exception as e:
+                if "no transaction is active" not in str(e).lower():
                     raise
+            finally:
+                if self._provider_kind != 'sqlite':
+                    try:
+                        db.autocommit = True
+                    except Exception:
+                        pass
             self._in_transaction = False
 
     def RollbackTrans(self):
         if self._is_open:
             db = _conn_or_raise(self)
             try:
-                db.execute("ROLLBACK")
-            except sqlite3.OperationalError as e:
-                if "no transaction is active" in str(e):
-                    pass
+                if self._provider_kind == 'sqlite':
+                    db.execute("ROLLBACK")
                 else:
+                    db.rollback()
+            except Exception as e:
+                if "no transaction is active" not in str(e).lower():
                     raise
+            finally:
+                if self._provider_kind != 'sqlite':
+                    try:
+                        db.autocommit = True
+                    except Exception:
+                        pass
             self._in_transaction = False
 
     @property
@@ -1327,6 +1935,7 @@ class ADOCommand:
         conn = self.ActiveConnection
         if conn is None:
             raise_runtime('ADO_OBJECT_CLOSED', "No ActiveConnection")
+        assert conn is not None
         if not conn._is_open:
             conn.Open()
 
@@ -1344,12 +1953,17 @@ class ADOCommand:
         db = _conn_or_raise(conn)
         cur = db.cursor()
         try:
+            if conn._provider_kind == 'excel' and not _is_readonly_query(sql):
+                raise_runtime(
+                    'ADO_UNSPECIFIED',
+                    "Excel provider is read-only in ASP4. Only SELECT queries are supported.",
+                )
             cur.execute(sql, param_vals)
-            if cur.description:
+            if cur.description is not None:
                 rs = ADORecordset(conn)
                 rs._set_col_names(
                     [d[0] for d in cur.description],
-                    [_sqlite_type_to_ado(d[1]) for d in cur.description],
+                    [_column_type_to_ado(d[1]) for d in cur.description],
                 )
                 rs._rows = cur.fetchall()
                 rs._cur_idx = 0
@@ -1358,7 +1972,7 @@ class ADOCommand:
                 return rs
             else:
                 db.commit()
-                return None
+                return ADORecordset(conn)
         except Exception as e:
             try:
                 db.rollback()
@@ -1374,11 +1988,28 @@ class ADOCommand:
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _sqlite_type_to_ado(declared_type: Optional[str]) -> int:
-    if not declared_type:
+def _column_type_to_ado(type_meta: Any) -> int:
+    if type_meta is None:
         return adVariant
-    t = declared_type.strip().lower().split('(')[0]
-    return _SQLITE_TYPE_MAP.get(t, adVariant)
+
+    if isinstance(type_meta, str):
+        t = type_meta.strip().lower().split('(')[0]
+        return _SQLITE_TYPE_MAP.get(t, adVariant)
+
+    name = str(type_meta).lower()
+    if 'int' in name:
+        return adInteger
+    if 'float' in name or 'double' in name or 'real' in name or 'decimal' in name or 'numeric' in name:
+        return adDouble
+    if 'bool' in name:
+        return adBoolean
+    if 'date' in name or 'time' in name:
+        return adDate
+    if 'bytes' in name or 'binary' in name or 'blob' in name:
+        return adLongVarBinary
+    if 'char' in name or 'text' in name or 'str' in name:
+        return adVarWChar
+    return adVariant
 
 
 def TypeName(obj) -> str:
@@ -1450,6 +2081,13 @@ def _split_sql_statements(sql: str) -> list[str]:
     return statements
 
 
+def _is_readonly_query(sql: str) -> bool:
+    s = vbs_cstr(sql).strip()
+    if not s:
+        return True
+    return re.match(r'(?is)^(select|with)\b', s) is not None
+
+
 def _criteria_matcher(criteria: Any, col_names: list[str], source: str = "Filter"):
     crit = vbs_cstr(criteria) if criteria is not None else ""
     m = re.match(r"\s*\[?(\w+)\]?\s*(=|<>|!=|>=|<=|>|<)\s*(.+)\s*", crit)
@@ -1466,9 +2104,12 @@ def _criteria_matcher(criteria: Any, col_names: list[str], source: str = "Filter
                 value = float(raw)
             except Exception:
                 value = raw
+    idx = -1
     try:
         idx = [c.lower() for c in col_names].index(field.lower())
     except ValueError:
+        raise_runtime('ADO_ARGS_WRONG_TYPE', f"ADODB.Recordset.{source}: field not found: {field}")
+    if idx < 0:
         raise_runtime('ADO_ARGS_WRONG_TYPE', f"ADODB.Recordset.{source}: field not found: {field}")
 
     def _cmp(a, b):
@@ -1510,9 +2151,12 @@ def _sort_rows(
             continue
         field = m.group(1)
         direction = (m.group(2) or "ASC").upper()
+        idx = -1
         try:
             idx = [c.lower() for c in col_names].index(field.lower())
         except ValueError:
+            raise_runtime('ADO_ARGS_WRONG_TYPE', f"ADODB.Recordset.{source}: field not found: {field}")
+        if idx < 0:
             raise_runtime('ADO_ARGS_WRONG_TYPE', f"ADODB.Recordset.{source}: field not found: {field}")
         terms.append((idx, direction == "DESC"))
     if not terms:

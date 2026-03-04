@@ -50,6 +50,7 @@ _STATIC_MIME_TYPES: dict[str, str] = {
     'svg':  'image/svg+xml',
     'htm':  'text/html',
     'html': 'text/html',
+    'md':  'text/html',
     'js':   'application/javascript',
     'map':  'application/json',
     'css':  'text/css',
@@ -81,6 +82,7 @@ _STATIC_MIME_TYPES: dict[str, str] = {
     'woff':  'font/woff',
     'woff2': 'font/woff2',
     'ttf':  'font/ttf',
+    'otf':  'font/otf',
     'eot':  'application/vnd.ms-fontobject',
 }
 
@@ -351,6 +353,13 @@ class ASPHTTPServerV6(ASPHTTPServer):
 class ASPRequestHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
+    def __getattr__(self, name):
+        # Allow arbitrary HTTP verbs to reach ASP pages.
+        # BaseHTTPRequestHandler calls do_<VERB>(); we route unknown verbs to _handle.
+        if name.startswith("do_"):
+            return self._handle
+        raise AttributeError(name)
+
     def log_message(self, format, *args):
         if not _env_bool("ASP_PY_LOG", False):
             return
@@ -366,6 +375,8 @@ class ASPRequestHandler(BaseHTTPRequestHandler):
         self._handle()
 
     def _handle(self):
+        method = self.command.upper()
+        is_head = method == "HEAD"
         parsed = urllib.parse.urlsplit(self.path)
         raw_path = parsed.path or "/"
         try:
@@ -452,6 +463,8 @@ class ASPRequestHandler(BaseHTTPRequestHandler):
                     self.send_header('Pragma', 'no-cache')
                     self.send_header('Expires', '0')
                 self.end_headers()
+                if is_head:
+                    return
                 try:
                     with open(phys, 'rb') as f:
                         shutil.copyfileobj(f, self.wfile)
@@ -495,12 +508,13 @@ class ASPRequestHandler(BaseHTTPRequestHandler):
 
             exec_file_granular(phys, docroot, target_path, ctx.Interpreter)
 
-        # Read body (for POST/PUT). Support both Content-Length and chunked transfer encoding.
+        # Read request body for any verb except HEAD.
+        # Support both Content-Length and chunked transfer encoding.
         body = b""
         body_file_path = ""
         body_len = 0
         body_preview = b""
-        if self.command.upper() in ("POST", "PUT"):
+        if not is_head:
             mem_limit = max(0, _env_int("ASP_PY_REQ_MEM_MAX", 64 * 1024 * 1024))
             mem_chunks = []
             mem_total = 0
@@ -622,7 +636,7 @@ class ASPRequestHandler(BaseHTTPRequestHandler):
                     f"[asp4 trace] {self.command} {path} ctype={ctype!r} content_length={headers.get('Content-Length') or headers.get('content-length')!r} body_len={body_len} form_keys={list(form_map.keys())}",
                     file=sys.stderr,
                 )
-                if self.command.upper() in ("POST", "PUT"):
+                if method not in ("GET", "HEAD"):
                     print(f"[asp4 trace] body_preview={body_preview_txt!r}", file=sys.stderr)
                     # Common aspLite fields
                     for k in ("aspFormAction", "yesno", "checkbox", "radio"):
@@ -706,7 +720,8 @@ class ASPRequestHandler(BaseHTTPRequestHandler):
         except Exception:
             pass
 
-        self.wfile.write(final_body)
+        if not is_head:
+            self.wfile.write(final_body)
 
         # AppendToLog support: write to stdout (pragmatic)
         if getattr(res, 'log_tail', None):
