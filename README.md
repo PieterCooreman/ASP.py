@@ -1,14 +1,14 @@
-# ASP4 — Classic ASP/VBScript Runtime for Python
+# ASP.py — Classic ASP/VBScript Runtime for Python
 
 **Run your legacy Classic ASP pages on modern infrastructure — no IIS required.**
 
-ASP4 is a Python-based runtime that executes Classic ASP (VBScript) pages on Windows, Linux, and macOS. It implements the full Classic ASP object model (`Request`, `Response`, `Session`, `Application`, `Server`) alongside broad VBScript built-in coverage, so most legacy ASP applications just work.
+ASP.py is a Python-based runtime that executes Classic ASP (VBScript) pages on Windows, Linux, and macOS. It implements the full Classic ASP object model (`Request`, `Response`, `Session`, `Application`, `Server`) alongside broad VBScript built-in coverage, so most legacy ASP applications just work.
 
 ---
 
-## Why ASP4?
+## Why ASP.py?
 
-Classic ASP applications represent decades of business logic. Rewriting them is expensive and risky. ASP4 lets you **keep your existing `.asp` files** and serve them through a lightweight Python HTTP server — no COM, no Windows dependency, no IIS license. Linux typically runs Python 10–30% faster than Windows, increasing the performance advantage of modern frameworks like ASP4 over Classic ASP/VBScript on IIS.
+Classic ASP applications represent decades of business logic. Rewriting them is expensive and risky. ASP.py lets you **keep your existing `.asp` files** and serve them through a lightweight Python HTTP server — no COM, no Windows dependency, no IIS license. Linux typically runs Python 10–30% faster than Windows, increasing the performance advantage of modern frameworks like ASP.py over Classic ASP/VBScript on IIS.
 
 ---
 
@@ -16,7 +16,7 @@ Classic ASP applications represent decades of business logic. Rewriting them is 
 
 ```bash
 pip install fpdf2 bcrypt pillow pyodbc
-python -m ASP4.server 0.0.0.0 8080 www
+python -m ASP.py.server 0.0.0.0 8080 www
 ```
 
 Point your browser at `http://localhost:8080` and your `.asp` pages are live.
@@ -38,7 +38,7 @@ Point your browser at `http://localhost:8080` and your `.asp` pages are live.
 | POP3 / IMAP | Partial |
 | `Global.asa` events | Supported |
 
-ASP4 also ships extended helpers beyond classic ASP — JSON encode/decode, ZIP, PDF generation, image processing, and bcrypt password hashing — all accessible from VBScript via the global `ASP4` object.
+ASP.py also ships extended helpers beyond classic ASP — JSON encode/decode, ZIP, PDF generation, image processing, and bcrypt password hashing — all accessible from VBScript via the global `ASP.py` object.
 
 ---
 
@@ -57,9 +57,9 @@ Windows · Linux · macOS
 
 ## Compatibility Notes
 
-ASP4 targets practical app-level compatibility, not byte-for-byte IIS parity. Locale-specific formatting, edge-case type coercion, and COM-level quirks may differ. SQL is executed as-is by the underlying driver — no dialect translation is performed.
+ASP.py targets practical app-level compatibility, not byte-for-byte IIS parity. Locale-specific formatting, edge-case type coercion, and COM-level quirks may differ. SQL is executed as-is by the underlying driver — no dialect translation is performed.
 
-If you're migrating a critical application, run your own regression tests against ASP4 alongside IIS before cutting over.
+If you're migrating a critical application, run your own regression tests against ASP.py alongside IIS before cutting over.
 
 ---
 
