@@ -8,18 +8,6 @@ The Python transpiler resides in `C:\ASPPY\ASPPY\*.py`
 
 ---
 
-## Project Description
-
-[PLACEHOLDER: Insert the project description here, including:
-- Application name and purpose
-- Features and functionality
-- Database schema if needed
-- UI requirements
-- Any specific libraries or patterns to use
-]
-
----
-
 ## Core Rules for ASPPY Development
 
 ### Debugging & Error Visibility (CRITICAL)
