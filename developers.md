@@ -16,6 +16,7 @@ Start every new app from `C:\ASPPY\www_starter`.
 - Use ASPPY only
 - Do not add IIS requirements
 - Run the dev server on port `5000`
+- After editing any included .asp file, restart the ASPPY server process to clear the in-memory ASP compilation cache
 
 ```bash
 python -m ASPPY.server 0.0.0.0 5000 www
