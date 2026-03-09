@@ -1,0 +1,3 @@
+<%
+ response.write "think twice"
+%>
