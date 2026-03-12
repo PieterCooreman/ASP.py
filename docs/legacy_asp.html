@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legacy ASP Objects - ASPPY Framework Documentation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <style>
+        body { padding-top: 5rem; }
+        .sidebar { min-height: calc(100vh - 5rem); border-right: 1px solid #dee2e6; }
+        pre code { border-radius: 5px; }
+        pre { position: relative; }
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 12px;
+            color: #495057;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .copy-btn:hover {
+            background-color: #e2e6ea;
+        }
+
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">ASPPY Framework</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExample" aria-controls="navbarsExample" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarsExample">
+            <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                <li class="nav-item"><a class="nav-link active" href="legacy_asp.html">Legacy ASP</a></li>
+                <li class="nav-item"><a class="nav-link" href="database.html">Database (ADODB)</a></li>
+                <li class="nav-item"><a class="nav-link" href="pop3_imap.html">Mail (POP3/IMAP)</a></li>
+                <li class="nav-item"><a class="nav-link" href="zip.html">Zip</a></li>
+                <li class="nav-item"><a class="nav-link" href="pdf.html">PDF</a></li>
+                <li class="nav-item"><a class="nav-link" href="image.html">Image</a></li>
+                <li class="nav-item"><a class="nav-link" href="crypto.html">Crypto</a></li>
+                <li class="nav-item"><a class="nav-link" href="json.html">JSON</a></li>
+                <li class="nav-item"><a class="nav-link" href="specifications.html">Specifications</a></li>
+                <li class="nav-item"><a class="nav-link" href="why_asppy.html">Why ASPPY Exists</a></li>
+                <li class="nav-item"><a class="nav-link" href="iis_setup.html">IIS Setup</a></li>
+                <li class="nav-item"><a class="nav-link" href="sample_apps.html">Sample Apps</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="legacy_asp.html">Legacy ASP Objects</a></li>
+                    <li class="nav-item"><a class="nav-link" href="database.html">Database (ADODB)</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pop3_imap.html">ASPPY Mail</a></li>
+                    <li class="nav-item"><a class="nav-link" href="zip.html">ASPPY.zip</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pdf.html">ASPPY.pdf</a></li>
+                    <li class="nav-item"><a class="nav-link" href="image.html">ASPPY.image</a></li>
+                    <li class="nav-item"><a class="nav-link" href="crypto.html">ASPPY.crypto</a></li>
+                    <li class="nav-item"><a class="nav-link" href="json.html">ASPPY.json</a></li>
+                    <li class="nav-item"><a class="nav-link" href="specifications.html">Specifications</a></li>
+                    <li class="nav-item"><a class="nav-link" href="why_asppy.html">Why ASPPY Exists</a></li>
+                    <li class="nav-item"><a class="nav-link" href="iis_setup.html">IIS Setup</a></li>
+                    <li class="nav-item"><a class="nav-link" href="sample_apps.html">Sample Apps</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4 mb-5">
+            <h1 class="pb-2 border-bottom">Legacy Classic ASP / VBScript Support</h1>
+            <p>ASPPY promises 99% compatibility with legacy Classic ASP. It implements a fully functioning VBScript Virtual Machine and provides Python-based shims for the most common built-in ASP objects (Request, Response, Server, Application, Session) and commonly used COM objects.</p>
+
+            <h3 class="mt-4">VBScript Language Features</h3>
+            <p>ASPPY supports standard VBScript syntax and flow control:</p>
+            <ul>
+                <li><strong>Variables & Types:</strong> <code>Dim</code>, <code>Const</code>, Variants (Strings, Integers, Booleans, Arrays).</li>
+                <li><strong>Flow Control:</strong> <code>If...Then...Else</code>, <code>Select Case</code>, <code>For...Next</code>, <code>For Each...In</code>, <code>Do...Loop</code>, <code>While...Wend</code>.</li>
+                <li><strong>Procedures:</strong> <code>Sub</code> and <code>Function</code> (including ByRef and ByVal passing).</li>
+                <li><strong>Classes:</strong> <code>Class</code> definitions, <code>Public</code> / <code>Private</code> members, <code>Property Get/Let/Set</code>.</li>
+                <li><strong>Error Handling:</strong> <code>On Error Resume Next</code>, <code>On Error GoTo 0</code>, and the <code>Err</code> object.</li>
+                <li><strong>Includes:</strong> <code>&lt;!-- #include file="..." --&gt;</code> and <code>&lt;!-- #include virtual="..." --&gt;</code>.</li>
+            </ul>
+
+            <h3 class="mt-4">The Response Object</h3>
+            <p>Used to send output to the client.</p>
+            <table class="table table-striped table-bordered">
+                <thead class="table-dark"><tr><th>Method / Property</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td><code>Response.Write(string)</code></td><td>Writes a string to the HTTP output.</td></tr>
+                    <tr><td><code>Response.Redirect(url)</code></td><td>Sends a 302 redirect.</td></tr>
+                    <tr><td><code>Response.End()</code></td><td>Stops script execution and flushes the buffer.</td></tr>
+                    <tr><td><code>Response.Flush() / Clear()</code></td><td>Flushes or clears the current output buffer.</td></tr>
+                    <tr><td><code>Response.File(path, [inline])</code></td><td>Serves a physical file to the client natively (handles mime type and content length automatically).</td></tr>
+                    <tr><td><code>Response.BinaryWrite(data)</code></td><td>Writes raw binary data.</td></tr>
+                    <tr><td><code>Response.ContentType</code></td><td>Sets the HTTP content type (e.g., "text/html").</td></tr>
+                    <tr><td><code>Response.Cookies(name) = value</code></td><td>Sets a cookie. Supports keys: <code>Response.Cookies(name)(key) = value</code> and <code>.Expires</code>.</td></tr>
+                    <tr><td><code>Response.Status</code></td><td>Sets the HTTP status line (e.g., "404 Not Found").</td></tr>
+                </tbody>
+            </table>
+
+            <h3 class="mt-4">The Request Object</h3>
+            <p>Used to retrieve client information.</p>
+            <table class="table table-striped table-bordered">
+                <thead class="table-dark"><tr><th>Collection</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td><code>Request.QueryString("key")</code></td><td>Gets GET parameters.</td></tr>
+                    <tr><td><code>Request.Form("key")</code></td><td>Gets POST parameters.</td></tr>
+                    <tr><td><code>Request.ServerVariables("key")</code></td><td>Gets server vars (e.g., REMOTE_ADDR, HTTP_USER_AGENT).</td></tr>
+                    <tr><td><code>Request.Cookies("key")</code></td><td>Gets cookie values.</td></tr>
+                    <tr><td><code>Request("key")</code></td><td>Shorthand: searches QueryString, Form, Cookies, then ServerVariables.</td></tr>
+                </tbody>
+            </table>
+            <h3 class="mt-4">Native File Uploads & Downloads</h3>
+            <p>ASPPY supports native <code>multipart/form-data</code> file uploads via <code>Request.Files</code>, entirely eliminating the need for complex third-party VBScript parser scripts (like freeASPUpload).</p>
+            <pre><code class="language-vbscript">&lt;%
+If Request.Files.Count &gt; 0 Then
+    Dim uploadedFile
+    Set uploadedFile = Request.Files("myFile")
+    
+    If Not uploadedFile Is Nothing Then
+        ' Save to disk natively
+        uploadedFile.SaveAs Server.MapPath("/data/uploaded_" &amp; uploadedFile.FileName)
+        Response.Write "Uploaded: " &amp; uploadedFile.FileName &amp; " (" &amp; uploadedFile.Size &amp; " bytes)"
+    End If
+End If
+%&gt;</code></pre>
+
+            <p class="mt-3">Similarly, securely streaming files back to the client is natively supported using <code>Response.File</code>. This stops script execution, handles correct Content-Type guessing, Content-Length calculation, and sets the Content-Disposition automatically.</p>
+            <pre><code class="language-vbscript">&lt;%
+Dim filePath
+filePath = Server.MapPath("/data/download_test.txt")
+
+' The second parameter determines if it's served inline (True) or as an attachment (False)
+Response.File filePath, False
+%&gt;</code></pre>
+
+            <h3 class="mt-4">The Server Object</h3>
+            <table class="table table-striped table-bordered">
+                <thead class="table-dark"><tr><th>Method</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td><code>Server.CreateObject(progid)</code></td><td>Instantiates COM objects (shimmed by Python equivalents).</td></tr>
+                    <tr><td><code>Server.MapPath(path)</code></td><td>Translates a virtual path to a physical filesystem path.</td></tr>
+                    <tr><td><code>Server.HTMLEncode(string)</code></td><td>Encodes HTML characters.</td></tr>
+                    <tr><td><code>Server.URLEncode(string)</code></td><td>URL-encodes a string.</td></tr>
+                    <tr><td><code>Server.Execute(path) / Transfer(path)</code></td><td>Executes another ASP page.</td></tr>
+                </tbody>
+            </table>
+
+            <h3 class="mt-4">Supported COM Objects via Server.CreateObject</h3>
+            <p>ASPPY intercepts <code>Server.CreateObject</code> calls and routes them to native Python implementations:</p>
+            <ul>
+                <li><code>Scripting.Dictionary</code> - Native dictionary implementation with string/case-insensitive mapping.</li>
+                <li><code>Scripting.FileSystemObject</code> - Native file IO (File, Folder, TextStream).</li>
+                <li><code>ADODB.Connection</code>, <code>ADODB.Recordset</code>, <code>ADODB.Command</code> - SQL database connectivity.</li>
+                <li><code>ADODB.Stream</code> - Binary and Text stream manipulation.</li>
+                <li><code>VBScript.RegExp</code> - Regular expressions (powered by Python <code>re</code>).</li>
+                <li><code>MSXML2.ServerXMLHTTP</code> / <code>MSXML2.DOMDocument</code> - HTTP requests and XML parsing.</li>
+                <li><code>CDO.Message</code> - Email sending.</li>
+            </ul>
+
+        </main>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/vbscript.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    document.querySelectorAll('pre').forEach((el) => {
+        const button = document.createElement('button');
+        button.innerText = 'Copy';
+        button.className = 'copy-btn';
+        button.addEventListener('click', () => {
+            const code = el.querySelector('code');
+            const textToCopy = code ? code.innerText : el.innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                button.innerText = 'Copied!';
+                setTimeout(() => {
+                    button.innerText = 'Copy';
+                }, 2000);
+            });
+        });
+        el.appendChild(button);
+    });
+});
+</script>
+</body>
+</html>

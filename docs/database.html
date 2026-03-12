@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Support (ADODB) - ASPPY Framework Documentation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <style>
+        body { padding-top: 5rem; }
+        .sidebar { min-height: calc(100vh - 5rem); border-right: 1px solid #dee2e6; }
+        pre code { border-radius: 5px; }
+        pre { position: relative; }
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 12px;
+            color: #495057;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .copy-btn:hover {
+            background-color: #e2e6ea;
+        }
+
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">ASPPY Framework</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExample" aria-controls="navbarsExample" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarsExample">
+            <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="legacy_asp.html">Legacy ASP</a></li>
+                <li class="nav-item"><a class="nav-link active" href="database.html">Database (ADODB)</a></li>
+                <li class="nav-item"><a class="nav-link" href="pop3_imap.html">Mail (POP3/IMAP)</a></li>
+                <li class="nav-item"><a class="nav-link" href="zip.html">Zip</a></li>
+                <li class="nav-item"><a class="nav-link" href="pdf.html">PDF</a></li>
+                <li class="nav-item"><a class="nav-link" href="image.html">Image</a></li>
+                <li class="nav-item"><a class="nav-link" href="crypto.html">Crypto</a></li>
+                <li class="nav-item"><a class="nav-link" href="json.html">JSON</a></li>
+                <li class="nav-item"><a class="nav-link" href="specifications.html">Specifications</a></li>
+                <li class="nav-item"><a class="nav-link" href="why_asppy.html">Why ASPPY Exists</a></li>
+                <li class="nav-item"><a class="nav-link" href="iis_setup.html">IIS Setup</a></li>
+                <li class="nav-item"><a class="nav-link" href="sample_apps.html">Sample Apps</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
+                    <li class="nav-item"><a class="nav-link" href="legacy_asp.html">Legacy ASP Objects</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="database.html">Database (ADODB)</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pop3_imap.html">ASPPY Mail</a></li>
+                    <li class="nav-item"><a class="nav-link" href="zip.html">ASPPY.zip</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pdf.html">ASPPY.pdf</a></li>
+                    <li class="nav-item"><a class="nav-link" href="image.html">ASPPY.image</a></li>
+                    <li class="nav-item"><a class="nav-link" href="crypto.html">ASPPY.crypto</a></li>
+                    <li class="nav-item"><a class="nav-link" href="json.html">ASPPY.json</a></li>
+                    <li class="nav-item"><a class="nav-link" href="specifications.html">Specifications</a></li>
+                    <li class="nav-item"><a class="nav-link" href="why_asppy.html">Why ASPPY Exists</a></li>
+                    <li class="nav-item"><a class="nav-link" href="iis_setup.html">IIS Setup</a></li>
+                    <li class="nav-item"><a class="nav-link" href="sample_apps.html">Sample Apps</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4 mb-5">
+            <h1 class="pb-2 border-bottom">Database Support (ADODB)</h1>
+            <p>ASPPY natively emulates classic ADODB objects (<code>ADODB.Connection</code>, <code>ADODB.Recordset</code>, <code>ADODB.Command</code>). It fully translates VBScript syntax and logic into secure Python database drivers under the hood.</p>
+
+            <h3 class="mt-4">Supported Drivers</h3>
+            <p>ASPPY dynamically parses the <code>ConnectionString</code> and routes connections to standard Python DB-API drivers.</p>
+            <ul>
+                <li><strong>SQLite</strong> (Default) - <code>Driver={SQLite3 ODBC Driver};Database=test.db</code></li>
+                <li><strong>Microsoft Access</strong> - Requires <code>pyodbc</code>. <code>Provider=Microsoft.ACE.OLEDB.12.0;Data Source=...</code></li>
+                <li><strong>SQL Server</strong> - Requires <code>pyodbc</code>. <code>Provider=SQLOLEDB;Data Source=...</code></li>
+                <li><strong>MySQL / MariaDB</strong> - Requires <code>mysql-connector-python</code>. <code>Driver={MySQL ODBC 8.0 Driver};...</code></li>
+                <li><strong>PostgreSQL</strong> - Requires <code>psycopg2</code>. <code>Driver={PostgreSQL Unicode};...</code></li>
+            </ul>
+
+            <h3 class="mt-4">ADODB.Connection</h3>
+            <p>Opens a connection to the database and executes queries.</p>
+            <pre><code class="language-vbscript">&lt;%
+Dim conn, rs
+Set conn = Server.CreateObject("ADODB.Connection")
+
+' Connect to an SQLite database (auto-created if it doesn't exist)
+conn.Open "Provider=SQLite;Data Source=" &amp; Server.MapPath("/data/app.db")
+
+' Execute raw SQL
+conn.Execute "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT)"
+conn.Execute "INSERT INTO users (name) VALUES ('John Doe')"
+
+' Retrieve a Recordset
+Set rs = conn.Execute("SELECT * FROM users")
+
+Do While Not rs.EOF
+    Response.Write "User ID: " &amp; rs("id").Value &amp; " - Name: " &amp; rs("name").Value &amp; "&lt;br&gt;"
+    rs.MoveNext
+Loop
+
+rs.Close
+Set rs = Nothing
+conn.Close
+Set conn = Nothing
+%&gt;</code></pre>
+
+            <h3 class="mt-4">ADODB.Recordset</h3>
+            <p>Standard recordset iteration and updating.</p>
+            <table class="table table-striped table-bordered">
+                <thead class="table-dark">
+                    <tr><th>Method/Property</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>Open(sql, connection)</code></td><td>Executes the query and opens the recordset.</td></tr>
+                    <tr><td><code>EOF / BOF</code></td><td>Checks if the cursor has reached the end or beginning of the set.</td></tr>
+                    <tr><td><code>MoveNext / MoveFirst</code></td><td>Navigates the dataset.</td></tr>
+                    <tr><td><code>Fields(name).Value</code></td><td>Retrieves the column value for the current row.</td></tr>
+                    <tr><td><code>AddNew() / Update()</code></td><td>Inserts a new row or commits changes to the current row.</td></tr>
+                    <tr><td><code>Delete()</code></td><td>Deletes the current row.</td></tr>
+                </tbody>
+            </table>
+            
+            <h5 class="mt-4">Updatable Recordsets Example</h5>
+            <pre><code class="language-vbscript">&lt;%
+Dim rs
+Set rs = Server.CreateObject("ADODB.Recordset")
+' Open a dynamic/updatable recordset
+rs.Open "SELECT * FROM users", conn, 1, 3 ' adOpenKeyset, adLockOptimistic
+
+rs.AddNew
+rs("name") = "Jane Smith"
+rs.Update
+
+rs.Close
+%&gt;</code></pre>
+
+            <h3 class="mt-4">ADODB.Command</h3>
+            <p>Prevents SQL injection by using parameters.</p>
+            <pre><code class="language-vbscript">&lt;%
+Dim cmd, rsParam
+Set cmd = Server.CreateObject("ADODB.Command")
+cmd.ActiveConnection = conn
+cmd.CommandText = "SELECT * FROM users WHERE name = ?"
+
+' Add a parameter
+cmd.Parameters.Append cmd.CreateParameter("name", 200, 1, 50, "Jane Smith") ' adVarChar=200, adParamInput=1
+
+Set rsParam = cmd.Execute()
+If Not rsParam.EOF Then
+    Response.Write "Found: " &amp; rsParam("name")
+End If
+rsParam.Close
+%&gt;</code></pre>
+            
+            <div class="alert alert-success mt-4">
+                <strong>ASPPY Security Bonus:</strong> ASPPY provides an extension allowing you to append <code>AutoEscapeSQL=1;</code> to your ADODB connection strings to attempt automatic SQL injection sanitization on legacy queries.
+            </div>
+        </main>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/vbscript.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    document.querySelectorAll('pre').forEach((el) => {
+        const button = document.createElement('button');
+        button.innerText = 'Copy';
+        button.className = 'copy-btn';
+        button.addEventListener('click', () => {
+            const code = el.querySelector('code');
+            const textToCopy = code ? code.innerText : el.innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                button.innerText = 'Copied!';
+                setTimeout(() => {
+                    button.innerText = 'Copy';
+                }, 2000);
+            });
+        });
+        el.appendChild(button);
+    });
+});
+</script>
+</body>
+</html>

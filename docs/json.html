@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASPPY.json - ASPPY Framework Documentation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <style>
+        body { padding-top: 5rem; }
+        .sidebar { min-height: calc(100vh - 5rem); border-right: 1px solid #dee2e6; }
+        pre code { border-radius: 5px; }
+        pre { position: relative; }
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 12px;
+            color: #495057;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .copy-btn:hover {
+            background-color: #e2e6ea;
+        }
+
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">ASPPY Framework</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExample" aria-controls="navbarsExample" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarsExample">
+            <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="legacy_asp.html">Legacy ASP</a></li>
+                <li class="nav-item"><a class="nav-link" href="database.html">Database (ADODB)</a></li>
+                <li class="nav-item"><a class="nav-link" href="pop3_imap.html">Mail (POP3/IMAP)</a></li>
+                <li class="nav-item"><a class="nav-link" href="zip.html">Zip</a></li>
+                <li class="nav-item"><a class="nav-link" href="pdf.html">PDF</a></li>
+                <li class="nav-item"><a class="nav-link" href="image.html">Image</a></li>
+                <li class="nav-item"><a class="nav-link" href="crypto.html">Crypto</a></li>
+                <li class="nav-item"><a class="nav-link active" href="json.html">JSON</a></li>
+                <li class="nav-item"><a class="nav-link" href="specifications.html">Specifications</a></li>
+                <li class="nav-item"><a class="nav-link" href="why_asppy.html">Why ASPPY Exists</a></li>
+                <li class="nav-item"><a class="nav-link" href="iis_setup.html">IIS Setup</a></li>
+                <li class="nav-item"><a class="nav-link" href="sample_apps.html">Sample Apps</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
+                    <li class="nav-item"><a class="nav-link" href="legacy_asp.html">Legacy ASP Objects</a></li>
+                    <li class="nav-item"><a class="nav-link" href="database.html">Database (ADODB)</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pop3_imap.html">ASPPY Mail</a></li>
+                    <li class="nav-item"><a class="nav-link" href="zip.html">ASPPY.zip</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pdf.html">ASPPY.pdf</a></li>
+                    <li class="nav-item"><a class="nav-link" href="image.html">ASPPY.image</a></li>
+                    <li class="nav-item"><a class="nav-link" href="crypto.html">ASPPY.crypto</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="json.html">ASPPY.json</a></li>
+                    <li class="nav-item"><a class="nav-link" href="specifications.html">Specifications</a></li>
+                    <li class="nav-item"><a class="nav-link" href="why_asppy.html">Why ASPPY Exists</a></li>
+                    <li class="nav-item"><a class="nav-link" href="iis_setup.html">IIS Setup</a></li>
+                    <li class="nav-item"><a class="nav-link" href="sample_apps.html">Sample Apps</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4 mb-5">
+            <h1 class="pb-2 border-bottom">ASPPY.json</h1>
+            <p>The <code>ASPPY.json</code> namespace provides fast, native JSON serialization and deserialization for VBScript.</p>
+            <p>Instead of relying on slow, third-party VBScript parser classes, ASPPY automatically maps VBScript arrays and <code>Scripting.Dictionary</code> objects to native Python lists and dicts, feeding them through Python's robust <code>json</code> module.</p>
+
+            <h3 class="mt-4">Methods</h3>
+            <table class="table table-striped table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Method</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>Encode(value, [pretty=False])</code></td>
+                        <td>Takes a VBScript variable (string, integer, boolean, Array, or Scripting.Dictionary) and serializes it to a JSON string. If <code>pretty</code> is True, the JSON is indented.</td>
+                    </tr>
+                    <tr>
+                        <td><code>Decode(json_string)</code></td>
+                        <td>Parses a JSON string and returns a VBScript representation. JSON arrays become VBScript Arrays, and JSON objects become <code>Scripting.Dictionary</code> objects.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 class="mt-4">Sample Code: Encoding</h3>
+            <pre><code class="language-vbscript">&lt;%
+Dim dict, jsonString
+
+' Create a standard Scripting.Dictionary
+Set dict = Server.CreateObject("Scripting.Dictionary")
+dict.Add "name", "ASPPY Framework"
+dict.Add "version", 1.0
+dict.Add "active", True
+
+' Nest an array
+dict.Add "features", Array("JSON", "Crypto", "PDF", "Image", "Zip")
+
+' Encode it to a JSON string with pretty formatting
+jsonString = ASPPY.json.Encode(dict, True)
+
+Response.Write "&lt;h5&gt;Encoded JSON:&lt;/h5&gt;"
+Response.Write "&lt;pre&gt;" & Server.HTMLEncode(jsonString) & "&lt;/pre&gt;"
+%&gt;</code></pre>
+
+            <h3 class="mt-4">Sample Code: Decoding</h3>
+            <pre><code class="language-vbscript">&lt;%
+Dim rawJson, decodedDict, features, feature
+
+rawJson = "{""user"": ""john_doe"", ""age"": 30, ""active"": true, ""roles"": [""admin"", ""editor""]}"
+
+' Decode the JSON string
+Set decodedDict = ASPPY.json.Decode(rawJson)
+
+Response.Write "&lt;b&gt;User:&lt;/b&gt; " & decodedDict("user") & "&lt;br&gt;"
+Response.Write "&lt;b&gt;Age:&lt;/b&gt; " & decodedDict("age") & "&lt;br&gt;"
+
+If decodedDict("active") Then
+    Response.Write "&lt;b&gt;Status:&lt;/b&gt; Active&lt;br&gt;"
+End If
+
+features = decodedDict("roles")
+Response.Write "&lt;b&gt;Roles:&lt;/b&gt; " & Join(features, ", ")
+%&gt;</code></pre>
+
+            <div class="alert alert-success mt-4">
+                <strong>Why use ASPPY.json?</strong> Traditional classic ASP JSON parsers rely on complex regular expressions in VBScript and are notoriously slow on large datasets. ASPPY hands off this operation to C-optimized underlying libraries, resulting in near-instantaneous encoding and decoding even for massive payloads.
+            </div>
+        </main>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/vbscript.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    document.querySelectorAll('pre').forEach((el) => {
+        const button = document.createElement('button');
+        button.innerText = 'Copy';
+        button.className = 'copy-btn';
+        button.addEventListener('click', () => {
+            const code = el.querySelector('code');
+            const textToCopy = code ? code.innerText : el.innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                button.innerText = 'Copied!';
+                setTimeout(() => {
+                    button.innerText = 'Copy';
+                }, 2000);
+            });
+        });
+        el.appendChild(button);
+    });
+});
+</script>
+</body>
+</html>

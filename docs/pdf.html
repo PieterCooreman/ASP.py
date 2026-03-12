@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASPPY.pdf - ASPPY Framework Documentation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <style>
+        body { padding-top: 5rem; }
+        .sidebar { min-height: calc(100vh - 5rem); border-right: 1px solid #dee2e6; }
+        pre code { border-radius: 5px; }
+        pre { position: relative; }
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 12px;
+            color: #495057;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .copy-btn:hover {
+            background-color: #e2e6ea;
+        }
+
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">ASPPY Framework</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExample" aria-controls="navbarsExample" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarsExample">
+            <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="legacy_asp.html">Legacy ASP</a></li>
+                <li class="nav-item"><a class="nav-link" href="database.html">Database (ADODB)</a></li>
+                <li class="nav-item"><a class="nav-link" href="pop3_imap.html">Mail (POP3/IMAP)</a></li>
+                <li class="nav-item"><a class="nav-link" href="zip.html">Zip</a></li>
+                <li class="nav-item"><a class="nav-link active" href="pdf.html">PDF</a></li>
+                <li class="nav-item"><a class="nav-link" href="image.html">Image</a></li>
+                <li class="nav-item"><a class="nav-link" href="crypto.html">Crypto</a></li>
+                <li class="nav-item"><a class="nav-link" href="json.html">JSON</a></li>
+                <li class="nav-item"><a class="nav-link" href="specifications.html">Specifications</a></li>
+                <li class="nav-item"><a class="nav-link" href="why_asppy.html">Why ASPPY Exists</a></li>
+                <li class="nav-item"><a class="nav-link" href="iis_setup.html">IIS Setup</a></li>
+                <li class="nav-item"><a class="nav-link" href="sample_apps.html">Sample Apps</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
+                    <li class="nav-item"><a class="nav-link" href="legacy_asp.html">Legacy ASP Objects</a></li>
+                    <li class="nav-item"><a class="nav-link" href="database.html">Database (ADODB)</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pop3_imap.html">ASPPY Mail</a></li>
+                    <li class="nav-item"><a class="nav-link" href="zip.html">ASPPY.zip</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="pdf.html">ASPPY.pdf</a></li>
+                    <li class="nav-item"><a class="nav-link" href="image.html">ASPPY.image</a></li>
+                    <li class="nav-item"><a class="nav-link" href="crypto.html">ASPPY.crypto</a></li>
+                    <li class="nav-item"><a class="nav-link" href="json.html">ASPPY.json</a></li>
+                    <li class="nav-item"><a class="nav-link" href="specifications.html">Specifications</a></li>
+                    <li class="nav-item"><a class="nav-link" href="why_asppy.html">Why ASPPY Exists</a></li>
+                    <li class="nav-item"><a class="nav-link" href="iis_setup.html">IIS Setup</a></li>
+                    <li class="nav-item"><a class="nav-link" href="sample_apps.html">Sample Apps</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4 mb-5">
+            <h1 class="pb-2 border-bottom">ASPPY.pdf</h1>
+            <p>The <code>ASPPY.pdf</code> namespace is powered by the Python <code>fpdf2</code> library. It allows you to construct robust PDF documents natively from your VBScript files.</p>
+
+            <h3 class="mt-4">Namespace Methods</h3>
+            <ul>
+                <li><code>New(orientation="P", unit="mm", format="A4")</code> - Initializes and returns a new <code>PdfDoc</code> object.</li>
+            </ul>
+
+            <h3 class="mt-4">PdfDoc Object Methods</h3>
+            <table class="table table-striped table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Method</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>add_page(orientation="")</code></td><td>Adds a new page to the document.</td></tr>
+                    <tr><td><code>set_font(family, style="", size=12)</code></td><td>Sets the font (e.g. "Arial", "B", 16).</td></tr>
+                    <tr><td><code>set_text_color(r, [g], [b])</code></td><td>Sets the text color using RGB.</td></tr>
+                    <tr><td><code>set_draw_color(r, [g], [b])</code></td><td>Sets the draw color for lines and shapes.</td></tr>
+                    <tr><td><code>set_fill_color(r, [g], [b])</code></td><td>Sets the fill color for filled cells and shapes.</td></tr>
+                    <tr><td><code>cell(w, h=0, text="", border=0, ln=0, align="", fill=False, link="")</code></td><td>Prints a cell with optional borders, background color, and text alignment.</td></tr>
+                    <tr><td><code>multi_cell(w, h, text, border=0, align="", fill=False)</code></td><td>Prints text with line breaks across multiple lines.</td></tr>
+                    <tr><td><code>write_html(html)</code></td><td>Renders basic HTML markup (<b>bold</b>, <i>italic</i>, headers) into the PDF.</td></tr>
+                    <tr><td><code>image(path, [x], [y], [w], [h])</code></td><td>Places an image onto the PDF canvas.</td></tr>
+                    <tr><td><code>output(path)</code></td><td>Saves the resulting PDF to a physical disk path.</td></tr>
+                </tbody>
+            </table>
+
+            <h3 class="mt-4">Sample Code</h3>
+            <pre><code class="language-vbscript">&lt;%
+Dim pdf
+' Create a new portrait A4 document measured in millimeters
+Set pdf = ASPPY.pdf.New("P", "mm", "A4")
+
+' Add a page
+pdf.add_page()
+
+' Set font and add title
+pdf.set_font "Arial", "B", 16
+pdf.set_text_color 0, 51, 102
+pdf.cell 0, 10, "ASPPY PDF Document", 0, 1, "C"
+
+' Paragraph
+pdf.ln 10
+pdf.set_font "Arial", "", 12
+pdf.set_text_color 0, 0, 0
+pdf.multi_cell 0, 10, "This PDF was generated natively from VBScript using the fpdf2 Python library underneath!"
+
+' Render some HTML markup
+pdf.ln 10
+pdf.write_html "&lt;b&gt;Bold&lt;/b&gt;, &lt;i&gt;Italic&lt;/i&gt;, and &lt;u&gt;Underline&lt;/u&gt; are supported. You can even include &lt;h1&gt;Headers&lt;/h1&gt;!"
+
+' Output to disk
+Dim outputPath
+outputPath = Server.MapPath("/pdfs/sample.pdf")
+pdf.output outputPath
+
+Response.Write "PDF created successfully at: " & outputPath
+%&gt;</code></pre>
+        </main>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/vbscript.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    document.querySelectorAll('pre').forEach((el) => {
+        const button = document.createElement('button');
+        button.innerText = 'Copy';
+        button.className = 'copy-btn';
+        button.addEventListener('click', () => {
+            const code = el.querySelector('code');
+            const textToCopy = code ? code.innerText : el.innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                button.innerText = 'Copied!';
+                setTimeout(() => {
+                    button.innerText = 'Copy';
+                }, 2000);
+            });
+        });
+        el.appendChild(button);
+    });
+});
+</script>
+</body>
+</html>

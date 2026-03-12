@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASPPY.crypto - ASPPY Framework Documentation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <style>
+        body { padding-top: 5rem; }
+        .sidebar { min-height: calc(100vh - 5rem); border-right: 1px solid #dee2e6; }
+        pre code { border-radius: 5px; }
+        pre { position: relative; }
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 12px;
+            color: #495057;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .copy-btn:hover {
+            background-color: #e2e6ea;
+        }
+
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">ASPPY Framework</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExample" aria-controls="navbarsExample" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarsExample">
+            <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="legacy_asp.html">Legacy ASP</a></li>
+                <li class="nav-item"><a class="nav-link" href="database.html">Database (ADODB)</a></li>
+                <li class="nav-item"><a class="nav-link" href="pop3_imap.html">Mail (POP3/IMAP)</a></li>
+                <li class="nav-item"><a class="nav-link" href="zip.html">Zip</a></li>
+                <li class="nav-item"><a class="nav-link" href="pdf.html">PDF</a></li>
+                <li class="nav-item"><a class="nav-link" href="image.html">Image</a></li>
+                <li class="nav-item"><a class="nav-link active" href="crypto.html">Crypto</a></li>
+                <li class="nav-item"><a class="nav-link" href="json.html">JSON</a></li>
+                <li class="nav-item"><a class="nav-link" href="specifications.html">Specifications</a></li>
+                <li class="nav-item"><a class="nav-link" href="why_asppy.html">Why ASPPY Exists</a></li>
+                <li class="nav-item"><a class="nav-link" href="iis_setup.html">IIS Setup</a></li>
+                <li class="nav-item"><a class="nav-link" href="sample_apps.html">Sample Apps</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
+                    <li class="nav-item"><a class="nav-link" href="legacy_asp.html">Legacy ASP Objects</a></li>
+                    <li class="nav-item"><a class="nav-link" href="database.html">Database (ADODB)</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pop3_imap.html">ASPPY Mail</a></li>
+                    <li class="nav-item"><a class="nav-link" href="zip.html">ASPPY.zip</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pdf.html">ASPPY.pdf</a></li>
+                    <li class="nav-item"><a class="nav-link" href="image.html">ASPPY.image</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="crypto.html">ASPPY.crypto</a></li>
+                    <li class="nav-item"><a class="nav-link" href="json.html">ASPPY.json</a></li>
+                    <li class="nav-item"><a class="nav-link" href="specifications.html">Specifications</a></li>
+                    <li class="nav-item"><a class="nav-link" href="why_asppy.html">Why ASPPY Exists</a></li>
+                    <li class="nav-item"><a class="nav-link" href="iis_setup.html">IIS Setup</a></li>
+                    <li class="nav-item"><a class="nav-link" href="sample_apps.html">Sample Apps</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4">
+            <h1 class="pb-2 border-bottom">ASPPY.crypto</h1>
+            <p>The <code>ASPPY.crypto</code> namespace provides modern, secure cryptography utilizing the Python <code>bcrypt</code> module. This is heavily recommended over legacy MD5 or SHA1 hashing techniques common in older VBScript apps.</p>
+
+            <h3 class="mt-4">Methods</h3>
+            <table class="table table-striped table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Method</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>Hash(password, [rounds=10])</code></td>
+                        <td>Hashes a plaintext password using bcrypt. The salt is automatically generated. The result is a safe string intended for database storage. <code>rounds</code> specifies the work factor (default is 10, acceptable range 4..31).</td>
+                    </tr>
+                    <tr>
+                        <td><code>Verify(password, hashed)</code></td>
+                        <td>Safely compares a plaintext password against a previously generated bcrypt hash. Returns <code>True</code> if they match, and <code>False</code> otherwise.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 class="mt-4">Sample Code</h3>
+            <pre><code class="language-vbscript">&lt;%
+Dim password, hashedPw, isValid
+
+password = "SuperSecretPassword123!"
+
+' 1. Hash the password (e.g., during Registration)
+' We'll use a work factor of 12 for strong security
+hashedPw = ASPPY.crypto.Hash(password, 12)
+Response.Write "Secure Bcrypt Hash: " & hashedPw & "&lt;br&gt;"
+' Output Example: $2b$12$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW
+
+' 2. Verify the password (e.g., during Login)
+isValid = ASPPY.crypto.Verify(password, hashedPw)
+If isValid Then
+    Response.Write "&lt;strong style='color:green;'&gt;Password verified successfully!&lt;/strong&gt;&lt;br&gt;"
+Else
+    Response.Write "&lt;strong style='color:red;'&gt;Invalid password.&lt;/strong&gt;&lt;br&gt;"
+End If
+
+' 3. Verify a bad attempt
+isValid = ASPPY.crypto.Verify("WrongPass", hashedPw)
+If Not isValid Then
+    Response.Write "Correctly rejected bad password attempt."
+End If
+%&gt;</code></pre>
+        </main>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/vbscript.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    document.querySelectorAll('pre').forEach((el) => {
+        const button = document.createElement('button');
+        button.innerText = 'Copy';
+        button.className = 'copy-btn';
+        button.addEventListener('click', () => {
+            const code = el.querySelector('code');
+            const textToCopy = code ? code.innerText : el.innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                button.innerText = 'Copied!';
+                setTimeout(() => {
+                    button.innerText = 'Copy';
+                }, 2000);
+            });
+        });
+        el.appendChild(button);
+    });
+});
+</script>
+</body>
+</html>

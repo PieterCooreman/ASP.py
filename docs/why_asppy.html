@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Why ASPPY Exists - ASPPY Framework Documentation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <style>
+        body { padding-top: 5rem; }
+        .sidebar { min-height: calc(100vh - 5rem); border-right: 1px solid #dee2e6; }
+        pre code { border-radius: 5px; }
+        pre { position: relative; }
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 12px;
+            color: #495057;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .copy-btn:hover {
+            background-color: #e2e6ea;
+        }
+
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">ASPPY Framework</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExample" aria-controls="navbarsExample" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarsExample">
+            <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="legacy_asp.html">Legacy ASP</a></li>
+                <li class="nav-item"><a class="nav-link" href="database.html">Database (ADODB)</a></li>
+                <li class="nav-item"><a class="nav-link" href="pop3_imap.html">Mail (POP3/IMAP)</a></li>
+                <li class="nav-item"><a class="nav-link" href="zip.html">Zip</a></li>
+                <li class="nav-item"><a class="nav-link" href="pdf.html">PDF</a></li>
+                <li class="nav-item"><a class="nav-link" href="image.html">Image</a></li>
+                <li class="nav-item"><a class="nav-link" href="crypto.html">Crypto</a></li>
+                <li class="nav-item"><a class="nav-link" href="json.html">JSON</a></li>
+                <li class="nav-item"><a class="nav-link" href="specifications.html">Specifications</a></li>
+                <li class="nav-item"><a class="nav-link active" href="why_asppy.html">Why ASPPY Exists</a></li>
+                <li class="nav-item"><a class="nav-link" href="iis_setup.html">IIS Setup</a></li>
+                <li class="nav-item"><a class="nav-link" href="sample_apps.html">Sample Apps</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
+                    <li class="nav-item"><a class="nav-link" href="legacy_asp.html">Legacy ASP Objects</a></li>
+                    <li class="nav-item"><a class="nav-link" href="database.html">Database (ADODB)</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pop3_imap.html">ASPPY Mail</a></li>
+                    <li class="nav-item"><a class="nav-link" href="zip.html">ASPPY.zip</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pdf.html">ASPPY.pdf</a></li>
+                    <li class="nav-item"><a class="nav-link" href="image.html">ASPPY.image</a></li>
+                    <li class="nav-item"><a class="nav-link" href="crypto.html">ASPPY.crypto</a></li>
+                    <li class="nav-item"><a class="nav-link" href="json.html">ASPPY.json</a></li>
+                    <li class="nav-item"><a class="nav-link" href="specifications.html">Specifications</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="why_asppy.html">Why ASPPY Exists</a></li>
+                    <li class="nav-item"><a class="nav-link" href="iis_setup.html">IIS Setup</a></li>
+                    <li class="nav-item"><a class="nav-link" href="sample_apps.html">Sample Apps</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4 mb-5">
+<h2>The Problem</h2>
+<p>Classic ASP applications written in VBScript are facing an existential threat — not because ASP itself is broken, but because <strong>Microsoft is removing VBScript from Windows entirely</strong>.</p>
+<p>Classic ASP relies on VBScript as its scripting engine. No VBScript means no Classic ASP. For organisations and developers running ASP applications that still work perfectly fine and serve real users, this is a serious problem.</p>
+<p>ASPPY is the answer.</p>
+<hr />
+<h2>Microsoft's VBScript Deprecation Timeline</h2>
+<p>VBScript (Visual Basic Scripting Edition) is a lightweight scripting language first introduced by Microsoft in 1996. It has been available as a system component in Windows and widely used for automating tasks and controlling applications, as well as embedded within HTML pages — commonly in conjunction with Active Server Pages (ASP).</p>
+<p>Microsoft announced a phased deprecation plan in May 2024. The three phases are as follows:</p>
+<ul>
+<li><strong>Phase 1:</strong> VBScript is pre-installed as a Feature on Demand (FOD) by default in Windows 11 24H2 and later, ensuring existing dependencies still work while organisations migrate away.</li>
+<li><strong>Phase 2 (from 2027):</strong> The VBScript FOD will no longer be activated by default. Users who need it must manually enable it via Settings &gt; System &gt; Optional Features.</li>
+<li><strong>Phase 3:</strong> VBScript will be fully retired and removed from future Windows releases, including all associated <code>.dll</code> files.</li>
+</ul>
+<p>When Phase 3 arrives, all VBScript dynamic link libraries will be removed from Windows, and projects that rely on VBScript will stop functioning entirely.</p>
+<hr />
+<h2>Why Microsoft Is Removing VBScript</h2>
+<p>This move is part of a broader strategy to remove Windows and Office features that threat actors use as attack vectors to deliver malware. Attackers have used VBScript in campaigns distributing strains like Lokibot, Emotet, Qbot, and DarkGate.</p>
+<p>Microsoft states that technology has advanced over the years, giving rise to more powerful and versatile scripting languages such as JavaScript and PowerShell — languages that offer broader capabilities and are better suited for modern web development and automation tasks.</p>
+<p>In short: VBScript is old, unmaintained, and a security liability. Its last stable release (5.8) dates back to 2010 — over fifteen years ago.</p>
+<hr />
+<h2>The Impact on Classic ASP</h2>
+<p>Classic ASP applications written in VBScript will stop working once Phase 3 is reached. This affects:</p>
+<ul>
+<li>Websites and web applications built on Classic ASP</li>
+<li>Any server still running Windows where VBScript is removed or disabled</li>
+<li>Hosting environments that upgrade their OS without re-enabling VBScript as an optional feature</li>
+</ul>
+<p>For many businesses, rewriting these applications from scratch in a modern language is not a realistic short-term option. The applications work, they serve users, and a full rewrite is expensive and risky.</p>
+<hr />
+<h2>What ASPPY Is</h2>
+<p>ASPPY is a self-contained Classic ASP execution engine that runs <strong>independently of the Windows VBScript component</strong>. It bundles its own VBScript interpreter, meaning it does not depend on Windows to provide <code>vbscript.dll</code>.</p>
+<p>Crucially, ASPPY is <strong>built entirely in Python</strong>. Python runs on Windows, Linux, and macOS — which means ASPPY does too. This is a fundamental architectural decision that makes ASPPY truly platform-independent. A Classic ASP application can now be hosted on a Linux VPS, a macOS development machine, or a Windows Server, without any changes to the ASP code itself. Linux typically runs Python 10–30% faster than Windows, increasing the performance advantage of ASPPY over Classic ASP/VBScript on IIS.</p>
+<p>This means:</p>
+<ul>
+<li>Classic ASP applications continue to run unchanged, even after Microsoft removes VBScript from Windows</li>
+<li>No rewrite of existing ASP code is required</li>
+<li>ASPPY runs on <strong>Windows, Linux and macOS</strong> — anywhere Python runs</li>
+<li>ASPPY runs as a standalone HTTP server (on port 8080 by default), sitting behind a reverse proxy such as IIS, nginx, or Apache</li>
+<li>The proxy handles everything else — static files, PHP, ASPX — and transparently forwards <code>.asp</code> requests to ASPPY</li>
+</ul>
+<hr />
+<h2>Platform Independence — Windows, Linux, Android and macOS</h2>
+<p>Because ASPPY is built on Python, it is not tied to any operating system. This opens up hosting scenarios that were never previously possible for Classic ASP:</p>
+<table class="table table-striped table-bordered"><thead class="table-dark">
+<thead>
+<tr>
+<th>Platform</th>
+<th>Web Server</th>
+<th>ASPPY</th>
+</tr>
+</thead><tbody>
+<tbody>
+<tr>
+<td>Windows</td>
+<td>IIS, Apache, nginx</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Linux</td>
+<td>nginx, Apache</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>macOS</td>
+<td>nginx, Apache</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Android</td>
+<td>KSWEB, Servers Ultimate, UserLAnd + nginx</td>
+<td>✅</td>
+</tr>
+</tbody>
+</tbody></table>
+<p>A Classic ASP application that today runs on a Windows Server with IIS can tomorrow be migrated to a Linux cloud instance at a fraction of the hosting cost — with zero changes to the ASP code. Developers on macOS can run and test Classic ASP applications locally without needing a Windows machine or a VM.</p>
+<p>Android support is a particularly striking example of just how platform-independent ASPPY is. Python runs on Android via environments like Termux or UserLAnd, and several web server applications are available for Android:</p>
+<ul>
+<li><strong>KSWEB</strong> — a full-featured web server app for Android supporting nginx, Apache, and PHP</li>
+<li><strong>Servers Ultimate</strong> — a flexible server suite for Android supporting Apache, nginx and many other protocols</li>
+<li><strong>Termux + nginx/Apache</strong> — Termux provides a full Linux-like environment on Android where nginx or Apache can be installed and run alongside ASPPY via Python</li>
+<li><strong>UserLAnd</strong> — runs a full Linux distribution on Android without root, enabling standard nginx or Apache setups</li>
+</ul>
+<p>This means a Classic ASP application can technically be developed, tested, or even served from an Android device — something that was never conceivable with native Classic ASP on Windows.</p>
+<p>This platform independence is a second major reason ASPPY was created, entirely separate from the VBScript deprecation issue. It fundamentally changes where Classic ASP can run.</p>
+<hr />
+<h2>How ASPPY Fits Into the IIS Setup</h2>
+<p>The <code>web.config</code> described in the companion wiki page routes <code>.asp</code> requests to ASPPY via IIS Application Request Routing (ARR). From the browser's perspective, nothing changes — the same URLs, the same responses, the same behaviour. ASPPY is completely invisible.</p>
+<pre><code>Browser → IIS (port 80/443)
+              │
+              ├─ *.php   → PHP via FastCGI
+              ├─ *.aspx  → ASP.NET
+              ├─ static  → IIS StaticFile module
+              └─ *.asp   → ASPPY (port 8080)
+</code></pre>
+<p>On Linux or macOS, nginx or Apache fills the same role as IIS — proxying <code>.asp</code> requests to ASPPY on port 8080 while handling everything else natively.</p>
+<p>When Microsoft eventually removes VBScript from Windows in Phase 3, IIS-hosted Classic ASP applications protected by this setup will continue running without interruption.</p>
+<hr />
+<h2>ASPPY Picks Up Where Classic ASP Left Off</h2>
+<p>ASPPY is not just a compatibility layer — it also extends Classic ASP with features that developers always wished were there but Microsoft never added.</p>
+<h3>Extended Request and Response Objects</h3>
+<p>Classic ASP's <code>Request</code> and <code>Response</code> objects were functional but limited, especially around file handling. ASPPY adds two long-missing capabilities:</p>
+<ul>
+<li><strong><code>Request.Files</code></strong> — a straightforward way to access uploaded files from a multipart form submission. Classic ASP required third-party components or complex workarounds to handle file uploads. In ASPPY this is built in.</li>
+<li><strong><code>Response.File</code></strong> — a single method to flush any file directly to the browser, handling headers, content type, and binary streaming automatically. Sending a file for download in Classic ASP required cumbersome binary stream workarounds. In ASPPY it is one line.</li>
+</ul>
+<h3>New Built-in Modules</h3>
+<p>ASPPY ships with a set of native modules that address the gaps Classic ASP developers have always worked around with third-party ActiveX components or external tools:</p>
+<ul>
+<li><strong><code>ASPPY.zip</code></strong> — create and extract ZIP archives directly from ASP code, with no external dependencies</li>
+<li><strong><code>ASPPY.pdf</code></strong> — generate PDF documents server-side, a capability Classic ASP never had natively</li>
+<li><strong><code>ASPPY.image</code></strong> — manipulate images server-side: resize, crop, convert formats and more</li>
+<li><strong><code>ASPPY.JSON</code></strong> — parse and produce JSON natively, essential for modern web applications and APIs</li>
+<li><strong><code>ASPPY.pop3</code></strong> — connect and read a pop3-enabled mailbox</li>
+<li><strong><code>ASPPY.imap</code></strong> — connect and read an imap-enabled mailbox</li>
+</ul>
+<p>These modules make ASPPY a genuinely capable modern web platform, not simply a preservation effort. Existing Classic ASP code runs unchanged, and new code can take advantage of these modules immediately — no third-party components, no COM registration, no legacy ActiveX dependencies.</p>
+<hr />
+<h2>Summary</h2>
+<table class="table table-striped table-bordered"><thead class="table-dark">
+<thead>
+<tr>
+<th></th>
+<th>Classic ASP on IIS (native)</th>
+<th>Classic ASP via ASPPY</th>
+</tr>
+</thead><tbody>
+<tbody>
+<tr>
+<td>Depends on Windows VBScript</td>
+<td>✅ Yes</td>
+<td>❌ No</td>
+</tr>
+<tr>
+<td>Survives Phase 3 removal</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Runs on Linux and macOS</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Runs on Android</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Built on Python</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Code changes required</td>
+<td>—</td>
+<td>None</td>
+</tr>
+<tr>
+<td>Works with existing IIS setup</td>
+<td>✅ Yes</td>
+<td>✅ Yes (via ARR proxy)</td>
+</tr>
+<tr>
+<td>Works with nginx / Apache</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Handles static files, PHP, ASPX</td>
+<td>✅ Yes</td>
+<td>✅ Yes (proxy handles these)</td>
+</tr>
+<tr>
+<td>Request.Files (native upload handling)</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Response.File (native file flushing)</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Built-in ZIP, PDF, image, JSON modules</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+</tbody>
+</tbody></table>
+<p>ASPPY is not a workaround — it is a forward-compatible replacement engine that lets Classic ASP applications outlive the platform they were built on.</p>
+</main>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/vbscript.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    document.querySelectorAll('pre').forEach((el) => {
+        const button = document.createElement('button');
+        button.innerText = 'Copy';
+        button.className = 'copy-btn';
+        button.addEventListener('click', () => {
+            const code = el.querySelector('code');
+            const textToCopy = code ? code.innerText : el.innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                button.innerText = 'Copied!';
+                setTimeout(() => {
+                    button.innerText = 'Copy';
+                }, 2000);
+            });
+        });
+        el.appendChild(button);
+    });
+});
+</script>
+</body>
+</html>
