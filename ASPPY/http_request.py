@@ -363,6 +363,10 @@ class Request:
         return self._method
 
     @property
+    def Method(self):
+        return self._method
+
+    @property
     def Path(self):
         return self._path
 
